@@ -1,3 +1,5 @@
 .chat {
     flex: 2;
+    border-left: #dddddd35 1px solid;
+    border-right: #dddddd35 1px solid;
 }
