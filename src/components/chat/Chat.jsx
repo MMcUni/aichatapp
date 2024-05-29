@@ -8,7 +8,7 @@ const Chat = () => {
 
   const handleEmoji = (e) => {
     setText((prev) => prev + e.emoji);
-    setOpen(false)
+    setOpen(false);
   };
 
   return (
@@ -17,7 +17,7 @@ const Chat = () => {
         <div className="user">
           <img src="./avatar.png" alt="User Avatar" />
           <div className="texts">
-            <span className="user-name">Jane Doe</span>
+            <span>Jane Doe</span>
             <p>Lorem ipsum dolor sit amet.</p>
           </div>
         </div>
@@ -27,7 +27,66 @@ const Chat = () => {
           <img src="./info.png" alt="Info Icon" />
         </div>
       </header>
-      <main className="center">{/* Add your main chat content here */}</main>
+      <div className="center">
+        <div className="message own">
+          <div className="texts">
+            <p>
+              Lorem ipsum dolor sit amet consectetur, adipisicing elit. Nobis
+              molestias velit eos assumenda officiis sed ducimus beatae nisi
+              voluptates. Nihil cupiditate laudantium quia recusandae et
+              repellendus, tenetur sed odit repellat!
+            </p>
+            <span>1 min ago</span>
+          </div>
+        </div>
+        <div className="message">
+          <img src="./avatar.png" alt="" />
+          <div className="texts">
+            <p>
+              Lorem ipsum dolor sit amet consectetur, adipisicing elit. Nobis
+              molestias velit eos assumenda officiis sed ducimus beatae nisi
+              voluptates. Nihil cupiditate laudantium quia recusandae et
+              repellendus, tenetur sed odit repellat!
+            </p>
+            <span>1 min ago</span>
+          </div>
+        </div>
+        <div className="message own">
+          <div className="texts">
+            <p>
+              Lorem ipsum dolor sit amet consectetur, adipisicing elit. Nobis
+              molestias velit eos assumenda officiis sed ducimus beatae nisi
+              voluptates. Nihil cupiditate laudantium quia recusandae et
+              repellendus, tenetur sed odit repellat!
+            </p>
+            <span>1 min ago</span>
+          </div>
+        </div>
+        <div className="message">
+          <img src="./avatar.png" alt="" />
+          <div className="texts">
+            <p>
+              Lorem ipsum dolor sit amet consectetur, adipisicing elit. Nobis
+              molestias velit eos assumenda officiis sed ducimus beatae nisi
+              voluptates. Nihil cupiditate laudantium quia recusandae et
+              repellendus, tenetur sed odit repellat!
+            </p>
+            <span>1 min ago</span>
+          </div>
+        </div>
+        <div className="message own">
+          <div className="texts">
+            <img src="https://metamma.com/assets/logo-ee5194e7.svg" alt="" />
+            <p>
+              Lorem ipsum dolor sit amet consectetur, adipisicing elit. Nobis
+              molestias velit eos assumenda officiis sed ducimus beatae nisi
+              voluptates. Nihil cupiditate laudantium quia recusandae et
+              repellendus, tenetur sed odit repellat!
+            </p>
+            <span>1 min ago</span>
+          </div>
+        </div>
+      </div>
       <footer className="bottom">
         <div className="icons">
           <img src="./img.png" alt="Image Icon" />
@@ -46,8 +105,11 @@ const Chat = () => {
             alt="Emoji Icon"
             onClick={() => setOpen((prev) => !prev)}
           />
-          <div className="picker"><EmojiPicker open={open} onEmojiClick={handleEmoji} /></div>
-          
+          {open && (
+            <div className="picker">
+              <EmojiPicker onEmojiClick={handleEmoji} />
+            </div>
+          )}
         </div>
         <button className="sendButton">Send</button>
       </footer>
