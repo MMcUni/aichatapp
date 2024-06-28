@@ -1,35 +1,92 @@
 import React, { useRef, useState, useEffect } from "react";
 import "./chat.css";
 import EmojiPicker from "emoji-picker-react";
+import {
+  arrayUnion,
+  doc,
+  getDoc,
+  onSnapshot,
+  updateDoc,
+} from "firebase/firestore";
 import { db } from "../../lib/firebase";
-import { doc, onSnapshot } from "firebase/firestore";
 import { useChatStore } from "../../lib/chatStore";
+import { useUserStore } from "../../lib/userStore";
 
 const Chat = () => {
   const [chat, setChat] = useState();
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
-  const { chatId } = useChatStore();
+
+  const { currentUser } = useUserStore();
+  const { chatId, user } = useChatStore();
 
   const endRef = useRef(null);
 
   useEffect(() => {
-    endRef.current.scrollIntoView({ behavior: "smooth" });
-  }, []);
+    if (endRef.current) {
+      endRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [chat?.messages]);
 
   useEffect(() => {
-    const unSub = onSnapshot(doc(db, "chats", "chatId"), (res) => {
-      setChat(res.data());
-    });
+    if (chatId) {
+      const unSub = onSnapshot(doc(db, "chats", chatId), (res) => {
+        setChat(res.data());
+      });
 
-    return () => {
-      unSub();
-    };
+      return () => {
+        unSub();
+      };
+    }
   }, [chatId]);
 
   const handleEmoji = (e) => {
     setText((prev) => prev + e.emoji);
     setOpen(false);
+  };
+
+  const handleSend = async () => {
+    if (text === "") return;
+
+    try {
+      await updateDoc(doc(db, "chats", chatId), {
+        messages: arrayUnion({
+          senderId: currentUser.id,
+          text,
+          createdAt: new Date(),
+        }),
+      });
+
+      const userIDs = [currentUser.id, user.id];
+
+      userIDs.forEach(async (id) => {
+        const userChatsRef = doc(db, "userchats", id);
+        const userChatsSnapshot = await getDoc(userChatsRef);
+
+        if (userChatsSnapshot.exists()) {
+          const userChatsData = userChatsSnapshot.data();
+
+          const chatIndex = userChatsData.chats.findIndex(
+            (c) => c.chatId === chatId
+          );
+
+          if (chatIndex !== -1) {
+            userChatsData.chats[chatIndex].lastMessage = text;
+            userChatsData.chats[chatIndex].isSeen =
+              id === currentUser.id ? true : false;
+            userChatsData.chats[chatIndex].updatedAt = Date.now();
+
+            await updateDoc(userChatsRef, {
+              chats: userChatsData.chats,
+            });
+          }
+        }
+      });
+    } catch (err) {
+      console.log(err);
+    }
+
+    setText("");
   };
 
   return (
@@ -49,18 +106,11 @@ const Chat = () => {
         </div>
       </header>
       <div className="center">
-        { chat.messages.map((message=>
-
-          <div className="message own" key={message.createdAt}>
+        {chat?.messages?.map((message) => (
+          <div className={`message ${message.senderId === currentUser.id ? "own" : ""}`} key={message.createdAt}>
             <div className="texts">
-              {message.img && <img src={message.img}
-              <p>
-                Lorem ipsum dolor sit amet consectetur, adipisicing elit. Nobis
-                molestias velit eos assumenda officiis sed ducimus beatae nisi
-                voluptates. Nihil cupiditate laudantium quia recusandae et
-                repellendus, tenetur sed odit repellat!
-              </p>
-              <span>1 min ago</span>
+              {message.img && <img src={message.img} alt="Image" />}
+              <p>{message.text}</p>
             </div>
           </div>
         ))}
@@ -90,7 +140,7 @@ const Chat = () => {
             </div>
           )}
         </div>
-        <button className="sendButton">Send</button>
+        <button className="sendButton" onClick={handleSend}>Send</button>
       </footer>
     </div>
   );
