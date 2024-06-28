@@ -18,19 +18,14 @@ const Chat = () => {
   }, []);
 
   useEffect(() => {
-    const unSub = onSnapshot(
-      doc(db, "chats", "chatId"),
-      (res) => {
-        setChat(res.data());
-      }
-    );
+    const unSub = onSnapshot(doc(db, "chats", "chatId"), (res) => {
+      setChat(res.data());
+    });
 
     return () => {
       unSub();
     };
   }, [chatId]);
-
-  console.log(chat);
 
   const handleEmoji = (e) => {
     setText((prev) => prev + e.emoji);
@@ -54,64 +49,21 @@ const Chat = () => {
         </div>
       </header>
       <div className="center">
-        <div className="message own">
-          <div className="texts">
-            <p>
-              Lorem ipsum dolor sit amet consectetur, adipisicing elit. Nobis
-              molestias velit eos assumenda officiis sed ducimus beatae nisi
-              voluptates. Nihil cupiditate laudantium quia recusandae et
-              repellendus, tenetur sed odit repellat!
-            </p>
-            <span>1 min ago</span>
+        { chat.messages.map((message=>
+
+          <div className="message own" key={message.createdAt}>
+            <div className="texts">
+              {message.img && <img src={message.img}
+              <p>
+                Lorem ipsum dolor sit amet consectetur, adipisicing elit. Nobis
+                molestias velit eos assumenda officiis sed ducimus beatae nisi
+                voluptates. Nihil cupiditate laudantium quia recusandae et
+                repellendus, tenetur sed odit repellat!
+              </p>
+              <span>1 min ago</span>
+            </div>
           </div>
-        </div>
-        <div className="message">
-          <img src="./avatar.png" alt="" />
-          <div className="texts">
-            <p>
-              Lorem ipsum dolor sit amet consectetur, adipisicing elit. Nobis
-              molestias velit eos assumenda officiis sed ducimus beatae nisi
-              voluptates. Nihil cupiditate laudantium quia recusandae et
-              repellendus, tenetur sed odit repellat!
-            </p>
-            <span>1 min ago</span>
-          </div>
-        </div>
-        <div className="message own">
-          <div className="texts">
-            <p>
-              Lorem ipsum dolor sit amet consectetur, adipisicing elit. Nobis
-              molestias velit eos assumenda officiis sed ducimus beatae nisi
-              voluptates. Nihil cupiditate laudantium quia recusandae et
-              repellendus, tenetur sed odit repellat!
-            </p>
-            <span>1 min ago</span>
-          </div>
-        </div>
-        <div className="message">
-          <img src="./avatar.png" alt="" />
-          <div className="texts">
-            <p>
-              Lorem ipsum dolor sit amet consectetur, adipisicing elit. Nobis
-              molestias velit eos assumenda officiis sed ducimus beatae nisi
-              voluptates. Nihil cupiditate laudantium quia recusandae et
-              repellendus, tenetur sed odit repellat!
-            </p>
-            <span>1 min ago</span>
-          </div>
-        </div>
-        <div className="message own">
-          <div className="texts">
-            <img src="https://metamma.com/assets/logo-ee5194e7.svg" alt="" />
-            <p>
-              Lorem ipsum dolor sit amet consectetur, adipisicing elit. Nobis
-              molestias velit eos assumenda officiis sed ducimus beatae nisi
-              voluptates. Nihil cupiditate laudantium quia recusandae et
-              repellendus, tenetur sed odit repellat!
-            </p>
-            <span>1 min ago</span>
-          </div>
-        </div>
+        ))}
         <div ref={endRef}></div>
       </div>
       <footer className="bottom">
