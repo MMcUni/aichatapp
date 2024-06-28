@@ -1,38 +1,47 @@
-import React, { useEffect, useState } from 'react';
-import './chatList.css';
-import AddUser from './addUser/AddUser.jsx';
+import React, { useEffect, useState } from "react";
+import "./chatList.css";
+import AddUser from "./addUser/AddUser.jsx";
 import { useUserStore } from "../../../lib/userStore";
-import { doc, getDoc, onSnapshot } from 'firebase/firestore';
-import { db } from '../../../lib/firebase.js';
+import { doc, getDoc, onSnapshot } from "firebase/firestore";
+import { db } from "../../../lib/firebase.js";
+import { useChatStore } from "../../../lib/chatStore";
 
 const ChatList = () => {
   const [chats, setChats] = useState([]);
   const [addMode, setAddMode] = useState(false);
 
-  const {currentUser} = useUserStore();
+  const { currentUser } = useUserStore();
+  const { chatId, changeChat } = useChatStore();
 
   useEffect(() => {
-    const unSub = onSnapshot(doc(db, 'userchats', currentUser.id), async (res) => {
-      const items = res.data().chats;
+    const unSub = onSnapshot(
+      doc(db, "userchats", currentUser.id),
+      async (res) => {
+        const items = res.data().chats;
 
-      const promises = items.map(async(item)=>{
-        const userDocRef = doc(db, 'users', item.receiverId);
-        const userDocSnap = await getDoc(userDocRef);
+        const promises = items.map(async (item) => {
+          const userDocRef = doc(db, "users", item.receiverId);
+          const userDocSnap = await getDoc(userDocRef);
 
-        const user = userDocSnap.data()
+          const user = userDocSnap.data();
 
-        return {...item, user};
-      });
+          return { ...item, user };
+        });
 
-      const chatData = await Promise.all(promises);
+        const chatData = await Promise.all(promises);
 
-      setChats(chatData.sort((a, b) => b.updatedAt - a.updatedAt))
-    });
+        setChats(chatData.sort((a, b) => b.updatedAt - a.updatedAt));
+      }
+    );
 
-  return () => {
-    unSub();
+    return () => {
+      unSub();
     };
   }, [currentUser.id]);
+
+  const handleSelect = async (chat) => {
+    changeChat(chat.chatId, chat.user);
+  };
 
   return (
     <div className="chatList">
@@ -50,18 +59,22 @@ const ChatList = () => {
       </div>
 
       {chats.map((chat) => (
-        <div className='item' key={chat.chatId}>
-          <img src='./avatar.png' alt='Avatar' />
-          <div className='texts'>
-            <span>Jane Doe</span>
+        <div
+          className="item"
+          key={chat.chatId}
+          onClick={() => handleSelect(chat)}
+        >
+          <img src={chat.user.avatar || "./avatar.png"} alt="Avatar" />
+          <div className="texts">
+            <span>{chat.user.username}</span>
             <p>{chat.lastMessage}</p>
-            </div>
           </div>
+        </div>
       ))}
 
       {addMode && <AddUser />}
     </div>
   );
-}
+};
 
 export default ChatList;
