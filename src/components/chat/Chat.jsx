@@ -16,6 +16,10 @@ const Chat = () => {
   const [chat, setChat] = useState();
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
+  const [img, setImg] = useState({
+    file: null,
+    url: "",
+  });
 
   const { currentUser } = useUserStore();
   const { chatId, user } = useChatStore();
@@ -45,15 +49,31 @@ const Chat = () => {
     setOpen(false);
   };
 
+  const handleImg = (e) => {
+    if (e.target.files[0]) {
+      setImg({
+        file: e.target.files[0],
+        url: URL.createObjectURL(e.target.files[0]),
+      });
+    }
+  };
+
   const handleSend = async () => {
     if (text === "") return;
 
+    let imgUrl = null;
+
     try {
+      if(img.file) {
+        imgUrl = await upload(img.file);
+      }
+
       await updateDoc(doc(db, "chats", chatId), {
         messages: arrayUnion({
           senderId: currentUser.id,
           text,
           createdAt: new Date(),
+          ...(imgUrl && { img: imgUrl }),
         }),
       });
 
@@ -86,6 +106,11 @@ const Chat = () => {
       console.log(err);
     }
 
+    setImg({
+      file: null,
+      url: "",
+    });
+
     setText("");
   };
 
@@ -105,20 +130,37 @@ const Chat = () => {
           <img src="./info.png" alt="Info Icon" />
         </div>
       </header>
+
       <div className="center">
         {chat?.messages?.map((message) => (
-          <div className={`message ${message.senderId === currentUser.id ? "own" : ""}`} key={message.createdAt}>
+          <div className={message.senderId === currentUser?.id ? "message own" : "message"} key={message.createdAt}>
             <div className="texts">
               {message.img && <img src={message.img} alt="Image" />}
               <p>{message.text}</p>
+              {/* <span>{message}</span> */}
             </div>
           </div>
         ))}
+        {img.url && (
+          <div className="message own">
+            <div className="texts">
+              <img src={img.url} alt="Image" />
+            </div>
+          </div>
+        )}
         <div ref={endRef}></div>
       </div>
       <footer className="bottom">
         <div className="icons">
-          <img src="./img.png" alt="Image Icon" />
+          <label htmlFor="file">
+            <img src="./img.png" alt="Image Icon" />
+          </label>
+          <input
+            type="file"
+            id="file"
+            style={{ display: "none" }}
+            onChange={handleImg}
+          />
           <img src="./camera.png" alt="Camera Icon" />
           <img src="./mic.png" alt="Microphone Icon" />
         </div>
@@ -140,7 +182,9 @@ const Chat = () => {
             </div>
           )}
         </div>
-        <button className="sendButton" onClick={handleSend}>Send</button>
+        <button className="sendButton" onClick={handleSend}>
+          Send
+        </button>
       </footer>
     </div>
   );
