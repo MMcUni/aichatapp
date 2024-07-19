@@ -14,25 +14,47 @@ import {
 import { useState } from "react";
 import { useUserStore } from "../../../../lib/userStore";
 
+const AI_AGENTS = [
+  {
+    id: "doctor-tom",
+    username: "Doctor Tom",
+    avatar: "./ai-doctor.png",
+    isAI: true,
+    specialization: "medical",
+  },
+  {
+    id: "walter-weather",
+    username: "Walter Weather",
+    avatar: "./ai-weather.png",
+    isAI: true,
+    specialization: "weather",
+  },
+  {
+    id: "dave-entertainer",
+    username: "Dave the Entertainer",
+    avatar: "./ai-entertainer.png",
+    isAI: true,
+    specialization: "entertainment",
+  },
+];
+
 const AddUser = ({ setChats }) => {
   const [user, setUser] = useState(null);
   const [error, setError] = useState(null);
+  const [searchPerformed, setSearchPerformed] = useState(false);
   const { currentUser } = useUserStore();
 
   const handleSearch = async (e) => {
     e.preventDefault();
     setError(null);
+    setUser(null);
+    setSearchPerformed(true);
     const formData = new FormData(e.target);
     const username = formData.get("username");
 
-    if (username.toLowerCase() === "doctor tom") {
-      setUser({
-        id: "doctor-tom",
-        username: "Doctor Tom",
-        avatar: "./doctor-avatar.png",
-        isAI: true,
-        specialization: "medical",
-      });
+    const aiAgent = AI_AGENTS.find(agent => agent.username.toLowerCase() === username.toLowerCase());
+    if (aiAgent) {
+      setUser(aiAgent);
     } else {
       try {
         const userRef = collection(db, "users");
@@ -42,7 +64,6 @@ const AddUser = ({ setChats }) => {
           setUser(querySnapShot.docs[0].data());
         } else {
           setError("User not found");
-          setUser(null);
         }
       } catch (err) {
         console.log(err);
@@ -54,7 +75,7 @@ const AddUser = ({ setChats }) => {
   const handleAdd = async () => {
     if (!user) return;
   
-    const chatId = user.isAI ? `ai-assistant-${currentUser.id}` : (
+    const chatId = user.isAI ? `ai-assistant-${user.id}-${currentUser.id}` : (
       currentUser.id > user.id
         ? currentUser.id + user.id
         : user.id + currentUser.id
@@ -150,6 +171,7 @@ const AddUser = ({ setChats }) => {
         });
   
         setUser(null);
+        setSearchPerformed(false);
       } else {
         setError("Chat already exists");
       }
@@ -162,7 +184,7 @@ const AddUser = ({ setChats }) => {
   return (
     <div className="addUser">
       <form onSubmit={handleSearch}>
-        <input type="text" placeholder="Username or 'Doctor Tom'" name="username" />
+        <input type="text" placeholder="Username or AI Agent Name" name="username" />
         <button>Search</button>
       </form>
       {error && <p className="error">{error}</p>}
@@ -173,6 +195,19 @@ const AddUser = ({ setChats }) => {
             <span>{user.username}</span>
           </div>
           <button onClick={handleAdd}>Add User</button>
+        </div>
+      )}
+      {searchPerformed && !user && !error && (
+        <div className="ai-agents">
+          <h3>Available AI Agents:</h3>
+          <ul>
+            {AI_AGENTS.map((agent) => (
+              <li key={agent.id} onClick={() => setUser(agent)}>
+                <img src={agent.avatar} alt={agent.username} />
+                <span>{agent.username}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
     </div>

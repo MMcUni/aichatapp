@@ -40,31 +40,52 @@ const Chat = () => {
   useEffect(() => {
     console.log("Chat component useEffect triggered. ChatId:", chatId);
     
-    if (chatId && isAuthenticated) {
-      const chatDocId = user.isAI ? `ai-assistant-${currentUser.id}` : chatId;
+    if (chatId && isAuthenticated && user) {
+      let chatDocId;
       
-      console.log("Setting up chat listener for:", chatDocId);
-      unsubscribeRef.current = onSnapshot(doc(db, "chats", chatDocId), (res) => {
-        if (isAuthenticated) {
-          console.log("Chat snapshot received:", res.data());
-          if (res.exists()) {
-            setMessages(res.data().messages || []);
-          } else {
-            setMessages([]);
+      const setupChatListener = (docId) => {
+        console.log("Setting up chat listener for:", docId);
+        unsubscribeRef.current = onSnapshot(doc(db, "chats", docId), (res) => {
+          if (isAuthenticated) {
+            console.log("Chat snapshot received:", res.data());
+            if (res.exists()) {
+              setMessages(res.data().messages || []);
+            } else {
+              setMessages([]);
+            }
           }
-        }
-      }, (error) => {
-        console.error("Error in chat snapshot:", error);
-      });
+        }, (error) => {
+          console.error("Error in chat snapshot:", error);
+        });
+      };
+
+      if (user.isAI) {
+        // Check for both old and new format
+        const oldFormatId = `ai-assistant-${currentUser.id}`;
+        const newFormatId = `ai-assistant-${user.id}-${currentUser.id}`;
+        
+        const checkChatExists = async (id) => {
+          const docRef = doc(db, "chats", id);
+          const docSnap = await getDoc(docRef);
+          return docSnap.exists();
+        };
+        
+        (async () => {
+          if (await checkChatExists(oldFormatId)) {
+            chatDocId = oldFormatId;
+          } else {
+            chatDocId = newFormatId;
+          }
+          setupChatListener(chatDocId);
+        })();
+      } else {
+        chatDocId = chatId;
+        setupChatListener(chatDocId);
+      }
     }
 
     return cleanupListeners;
   }, [chatId, user, currentUser, isAuthenticated, cleanupListeners]);
-
-  const handleEmoji = (e) => {
-    setText((prev) => prev + e.emoji);
-    setOpen(false);
-  };
 
   const handleImg = (e) => {
     if (e.target.files[0]) {
@@ -99,8 +120,23 @@ const Chat = () => {
 
       console.log("New message object:", newMessage);
 
-      // Use the user-specific AI assistant chat ID
-      const chatDocId = user.isAI ? `ai-assistant-${currentUser.id}` : chatId;
+      let chatDocId;
+      if (user.isAI) {
+        const oldFormatId = `ai-assistant-${currentUser.id}`;
+        const newFormatId = `ai-assistant-${user.id}-${currentUser.id}`;
+        
+        const oldDocRef = doc(db, "chats", oldFormatId);
+        const oldDocSnap = await getDoc(oldDocRef);
+        
+        if (oldDocSnap.exists()) {
+          chatDocId = oldFormatId;
+        } else {
+          chatDocId = newFormatId;
+        }
+      } else {
+        chatDocId = chatId;
+      }
+
       console.log("Chat document ID:", chatDocId);
 
       const chatRef = doc(db, "chats", chatDocId);
@@ -120,9 +156,9 @@ const Chat = () => {
       let lastMessageText = text;
 
       if (user.isAI) {
-        console.log("AI user detected. Fetching Doctor Tom's response.");
-        const aiResponse = await getChatGPTResponse(text, "medical");
-        console.log("Doctor Tom's response received:", aiResponse);
+        console.log(`AI user detected. Fetching ${user.username}'s response.`);
+        const aiResponse = await getChatGPTResponse(text, user.specialization);
+        console.log(`${user.username}'s response received:`, aiResponse);
         const aiMessage = {
           senderId: user.id,
           text: aiResponse,
@@ -151,7 +187,7 @@ const Chat = () => {
           // If AI chat doesn't exist, add it
           userChatsData.chats.push({
             chatId: chatDocId,
-            receiverId: "doctor-tom",
+            receiverId: user.id,
             lastMessage: "",
             updatedAt: currentTime,
           });
@@ -192,14 +228,19 @@ const Chat = () => {
     }
   };
 
+  const handleEmoji = (e) => {
+    setText((prev) => prev + e.emoji);
+    setOpen(false);
+  };
+
   return (
     <div className="chat">
       <div className="top">
         <div className="user">
-          <img src={user?.avatar || "./doctor-avatar.png"} alt="" />
+          <img src={user?.avatar || "./avatar.png"} alt="" />
           <div className="texts">
-            <span>{user?.username || "Doctor Tom"}</span>
-            <p>{user?.isAI ? "AI Medical Assistant" : "Online"}</p>
+            <span>{user?.username || "AI Assistant"}</span>
+            <p>{user?.isAI ? `AI ${user.specialization} Assistant` : "Online"}</p>
           </div>
         </div>
       </div>
@@ -246,7 +287,7 @@ const Chat = () => {
           placeholder={
             isCurrentUserBlocked || isReceiverBlocked
               ? "You cannot send a message"
-              : "Ask Doctor Tom a medical question..."
+              : `Ask ${user?.username || 'AI Assistant'} a question...`
           }
           value={text}
           onChange={(e) => setText(e.target.value)}

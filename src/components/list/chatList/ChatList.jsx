@@ -7,6 +7,30 @@ import { db } from "../../../lib/firebase";
 import { useChatStore } from "../../../lib/chatStore";
 import { format } from "timeago.js";
 
+const AI_AGENTS = {
+  "doctor-tom": {
+    id: "doctor-tom",
+    username: "Doctor Tom",
+    avatar: "./ai-doctor.png",
+    isAI: true,
+    specialization: "medical",
+  },
+  "walter-weather": {
+    id: "walter-weather",
+    username: "Walter Weather",
+    avatar: "./ai-weather.png",
+    isAI: true,
+    specialization: "weather",
+  },
+  "dave-entertainer": {
+    id: "dave-entertainer",
+    username: "Dave the Entertainer",
+    avatar: "./ai-entertainer.png",
+    isAI: true,
+    specialization: "entertainment",
+  },
+};
+
 const ChatList = () => {
   const [chats, setChats] = useState([]);
   const [addMode, setAddMode] = useState(false);
@@ -14,6 +38,11 @@ const ChatList = () => {
 
   const { currentUser } = useUserStore();
   const { chatId, changeChat } = useChatStore();
+
+  const truncateMessage = (message, maxLength = 30) => {
+    if (message.length <= maxLength) return message;
+    return message.substr(0, maxLength - 3) + '...';
+  };
 
   useEffect(() => {
     const fetchChats = async () => {
@@ -42,17 +71,17 @@ const ChatList = () => {
             console.log("Processing chat item:", chatItem);
             if (chatItem.chatId.startsWith('ai-assistant')) {
               console.log("AI assistant chat detected:", chatItem.chatId);
-              return {
-                ...chatItem,
-                user: {
-                  id: "doctor-tom",
-                  username: "Doctor Tom",
-                  avatar: "./doctor-avatar.png",
-                  isAI: true,
-                  specialization: "medical",
-                  blocked: [],
-                }
-              };
+              const aiId = chatItem.receiverId;
+              const aiAgent = AI_AGENTS[aiId];
+              if (aiAgent) {
+                return {
+                  ...chatItem,
+                  user: aiAgent
+                };
+              } else {
+                console.error("Unknown AI agent:", aiId);
+                return null;
+              }
             } else if (!chatItem.receiverId) {
               console.error("Invalid chat item (no receiverId):", chatItem);
               return null;
@@ -92,7 +121,7 @@ const ChatList = () => {
                     prevChat.chatId === chat.chatId
                       ? { 
                           ...prevChat, 
-                          lastMessage: lastMessage ? lastMessage.text : "No messages yet",
+                          lastMessage: lastMessage ? truncateMessage(lastMessage.text) : "No messages yet",
                           updatedAt: lastMessage ? new Date(lastMessage.createdAt).getTime() : prevChat.updatedAt
                         }
                       : prevChat
@@ -216,7 +245,7 @@ const ChatList = () => {
         </div>
       ))}
 
-{addMode && <AddUser setChats={setChats} />}
+      {addMode && <AddUser setChats={setChats} />}
     </div>
   );
 };

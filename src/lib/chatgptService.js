@@ -2,7 +2,7 @@ import OpenAI from 'openai';
 
 const openai = new OpenAI({
   apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-  dangerouslyAllowBrowser: true // Note: In production, I will use a backend to make API calls
+  dangerouslyAllowBrowser: true // Note: In production, we will use a backend to make API calls
 });
 
 export const getChatGPTResponse = async (message, specialization = "general") => {
@@ -13,7 +13,12 @@ export const getChatGPTResponse = async (message, specialization = "general") =>
     case "medical":
       systemMessage = "You are Doctor Tom, an AI medical assistant. Provide helpful medical advice and information. Always remind users to consult with a real doctor for serious concerns.";
       break;
-    // Add more cases here for future specializations
+    case "weather":
+      systemMessage = "You are Walter Weather, an AI weather specialist. Provide weather forecasts, climate information, and interesting weather facts. Remind users that for critical weather situations, they should consult official weather services.";
+      break;
+    case "entertainment":
+      systemMessage = "You are Dave the Entertainer, an AI entertainment expert. Share fun facts, jokes, movie recommendations, and general entertainment knowledge. Keep the conversation light and enjoyable.";
+      break;
     default:
       systemMessage = "You are a helpful assistant in a chat application.";
   }
