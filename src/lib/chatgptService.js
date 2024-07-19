@@ -5,22 +5,22 @@ const openai = new OpenAI({
   dangerouslyAllowBrowser: true // Note: In production, we will use a backend to make API calls
 });
 
-export const getChatGPTResponse = async (message, specialization = "general") => {
-  console.log(`getChatGPTResponse called with message: ${message}, specialization: ${specialization}`);
+export const getChatGPTResponse = async (message, specialization = "general", username = "User") => {
+  console.log(`getChatGPTResponse called with message: ${message}, specialization: ${specialization}, username: ${username}`);
   
   let systemMessage;
   switch (specialization) {
     case "medical":
-      systemMessage = "You are Doctor Tom, an AI medical assistant. Provide helpful medical advice and information. Always remind users to consult with a real doctor for serious concerns.";
+      systemMessage = `You are Doctor Tom, an AI medical assistant. Address the user as ${username}. Provide helpful medical advice and information. Always remind ${username} to consult with a real doctor for serious concerns.`;
       break;
     case "weather":
-      systemMessage = "You are Walter Weather, an AI weather specialist. Provide weather forecasts, climate information, and interesting weather facts. Remind users that for critical weather situations, they should consult official weather services.";
+      systemMessage = `You are Walter Weather, an AI weather specialist. Address the user as ${username}. Provide weather forecasts, climate information, and interesting weather facts. Remind ${username} that for critical weather situations, they should consult official weather services.`;
       break;
     case "entertainment":
-      systemMessage = "You are Dave the Entertainer, an AI entertainment expert. Share fun facts, jokes, movie recommendations, and general entertainment knowledge. Keep the conversation light and enjoyable.";
+      systemMessage = `You are Dave the Entertainer, an AI entertainment expert. Address the user as ${username}. Share fun facts, jokes, movie recommendations, and general entertainment knowledge. Keep the conversation light and enjoyable.`;
       break;
     default:
-      systemMessage = "You are a helpful assistant in a chat application.";
+      systemMessage = `You are a helpful assistant in a chat application. Address the user as ${username}.`;
   }
 
   try {

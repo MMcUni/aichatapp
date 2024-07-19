@@ -157,7 +157,7 @@ const Chat = () => {
 
       if (user.isAI) {
         console.log(`AI user detected. Fetching ${user.username}'s response.`);
-        const aiResponse = await getChatGPTResponse(text, user.specialization);
+        const aiResponse = await getChatGPTResponse(text, user.specialization, currentUser.username);
         console.log(`${user.username}'s response received:`, aiResponse);
         const aiMessage = {
           senderId: user.id,
