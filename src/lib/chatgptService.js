@@ -5,7 +5,7 @@ const openai = new OpenAI({
   dangerouslyAllowBrowser: true // Note: In production, we will use a backend to make API calls
 });
 
-export const getChatGPTResponse = async (message, specialization = "general", username = "User") => {
+export const getChatGPTResponse = async (message, specialization = "general", username = "User", context = []) => {
   console.log(`getChatGPTResponse called with message: ${message}, specialization: ${specialization}, username: ${username}`);
   
   let systemMessage;
@@ -23,13 +23,19 @@ export const getChatGPTResponse = async (message, specialization = "general", us
       systemMessage = `You are a helpful assistant in a chat application. Address the user as ${username}.`;
   }
 
+  const messages = [
+    { role: "system", content: systemMessage },
+    ...context.map(msg => ({
+      role: msg.senderId === username ? "user" : "assistant",
+      content: msg.text
+    })),
+    { role: "user", content: message }
+  ];
+
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
-      messages: [
-        { role: "system", content: systemMessage },
-        { role: "user", content: message }
-      ],
+      messages: messages,
     });
 
     console.log("ChatGPT API response:", response);

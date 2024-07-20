@@ -10,11 +10,14 @@ import upload from "../../lib/upload";
 import { format } from "timeago.js";
 import { getChatGPTResponse } from "../../lib/chatgptService";
 
+const MAX_CONTEXT_LENGTH = 10; // Maximum number of messages to keep in context
+
 const Chat = () => {
   const [messages, setMessages] = useState([]);
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
   const [img, setImg] = useState({ file: null, url: "" });
+  const [context, setContext] = useState([]);
 
   const { currentUser } = useUserStore();
   const { chatId, user, isCurrentUserBlocked, isReceiverBlocked } = useChatStore();
@@ -96,6 +99,14 @@ const Chat = () => {
     }
   };
 
+
+  const updateContext = useCallback((newMessage) => {
+    setContext(prevContext => {
+      const updatedContext = [...prevContext, newMessage].slice(-MAX_CONTEXT_LENGTH);
+      return updatedContext;
+    });
+  }, []);
+
   const handleSend = async () => {
     console.log("handleSend triggered. Text:", text);
     if (text === "") return;
@@ -122,17 +133,7 @@ const Chat = () => {
 
       let chatDocId;
       if (user.isAI) {
-        const oldFormatId = `ai-assistant-${currentUser.id}`;
-        const newFormatId = `ai-assistant-${user.id}-${currentUser.id}`;
-        
-        const oldDocRef = doc(db, "chats", oldFormatId);
-        const oldDocSnap = await getDoc(oldDocRef);
-        
-        if (oldDocSnap.exists()) {
-          chatDocId = oldFormatId;
-        } else {
-          chatDocId = newFormatId;
-        }
+        chatDocId = `ai-assistant-${user.id}-${currentUser.id}`;
       } else {
         chatDocId = chatId;
       }
@@ -144,20 +145,32 @@ const Chat = () => {
 
       if (!chatDoc.exists()) {
         console.log("Chat document doesn't exist. Creating new one.");
-        await setDoc(chatRef, { messages: [newMessage] });
+        await setDoc(chatRef, { messages: [newMessage], context: [newMessage] });
+        setContext([newMessage]);
       } else {
         console.log("Updating chat document with new message.");
         const existingMessages = chatDoc.data().messages || [];
+        const existingContext = chatDoc.data().context || [];
+        const updatedContext = [...existingContext, newMessage].slice(-MAX_CONTEXT_LENGTH);
         await updateDoc(chatRef, {
           messages: [...existingMessages, newMessage],
+          context: updatedContext
         });
+        setContext(updatedContext);
       }
+
+      updateContext(newMessage);
 
       let lastMessageText = text;
 
       if (user.isAI) {
         console.log(`AI user detected. Fetching ${user.username}'s response.`);
-        const aiResponse = await getChatGPTResponse(text, user.specialization, currentUser.username);
+        const aiResponse = await getChatGPTResponse(
+          text,
+          user.specialization,
+          currentUser.username,
+          context
+        );
         console.log(`${user.username}'s response received:`, aiResponse);
         const aiMessage = {
           senderId: user.id,
@@ -167,9 +180,15 @@ const Chat = () => {
         console.log("Updating chat document with AI response.");
         const updatedChatDoc = await getDoc(chatRef);
         const updatedMessages = updatedChatDoc.data().messages || [];
+        const updatedContext = [
+          ...(updatedChatDoc.data().context || []),
+          aiMessage,
+        ].slice(-MAX_CONTEXT_LENGTH);
         await updateDoc(chatRef, {
           messages: [...updatedMessages, aiMessage],
+          context: updatedContext,
         });
+        updateContext(aiMessage);
         lastMessageText = aiResponse;
       }
 
