@@ -9,8 +9,9 @@ import { useAuthStore } from "../../lib/authStore";
 import upload from "../../lib/upload";
 import { format } from "timeago.js";
 import { getChatGPTResponse } from "../../lib/chatgptService";
+import VoiceInteraction from "../VoiceInteraction";
 
-const MAX_CONTEXT_LENGTH = 10; // Maximum number of messages to keep in context
+const MAX_CONTEXT_LENGTH = 10;
 
 const Chat = () => {
   const [messages, setMessages] = useState([]);
@@ -252,6 +253,27 @@ const Chat = () => {
     setOpen(false);
   };
 
+  const renderMessage = (message) => {
+    const isOwn = message.senderId === currentUser.id;
+    return (
+      <div className={isOwn ? "message own" : "message"} key={message.id}>
+        <div className="texts">
+          {message.type === 'voice' ? (
+            <>
+              <audio src={message.audioUrl} controls />
+              <p>{message.text}</p>
+            </>
+          ) : message.img ? (
+            <img src={message.img} alt="" />
+          ) : (
+            <p>{message.text}</p>
+          )}
+          <span>{format(new Date(message.createdAt))}</span>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="chat">
       <div className="top">
@@ -264,16 +286,24 @@ const Chat = () => {
         </div>
       </div>
       <div className="center">
-        {messages.map((message, index) => (
+      {messages.map((message) => (
           <div
             className={
               message.senderId === currentUser.id ? "message own" : "message"
             }
-            key={index}
+            key={message.id || `${message.senderId}-${message.createdAt}`}
           >
             <div className="texts">
-              {message.img && <img src={message.img} alt="" />}
-              <p>{message.text}</p>
+              {message.type === 'voice' ? (
+                <>
+                  <audio src={message.audioUrl} controls />
+                  <p>{message.text}</p>
+                </>
+              ) : message.img ? (
+                <img src={message.img} alt="" />
+              ) : (
+                <p>{message.text}</p>
+              )}
               <span>{format(new Date(message.createdAt))}</span>
             </div>
           </div>
@@ -329,9 +359,10 @@ const Chat = () => {
         >
           Send
         </button>
+        <VoiceInteraction />
       </div>
     </div>
   );
-};
+}
 
 export default Chat;
