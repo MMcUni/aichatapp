@@ -169,3 +169,41 @@
     }
   }
 }
+
+.voice-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.3s ease;
+}
+
+.voice-button img {
+  width: 24px;
+  height: 24px;
+}
+
+.voice-button.recording {
+  animation: pulse 1s infinite;
+}
+
+.voice-button.recording img {
+  filter: invert(37%) sepia(78%) saturate(835%) hue-rotate(191deg) brightness(94%) contrast(96%);
+}
+
+.voice-button.processing {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
