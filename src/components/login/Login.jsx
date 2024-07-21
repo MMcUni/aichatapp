@@ -8,6 +8,7 @@ import {
 import { auth, db } from "../../lib/firebase";
 import { doc, setDoc, collection, query, where, getDocs } from "firebase/firestore";
 import upload from "../../lib/upload";
+import { handleAPIError } from "../../lib/errorHandler";
 
 const Login = () => {
   const [avatar, setAvatar] = useState({
@@ -34,12 +35,12 @@ const Login = () => {
     const { username, email, password } = Object.fromEntries(formData);
   
     if (!username || !email || !password) {
-      toast.warn("Please enter inputs!");
+      toast.warn("Please fill in all fields.");
       setLoading(false);
       return;
     }
     if (!avatar.file) {
-      toast.warn("Please upload an avatar!");
+      toast.warn("Please upload an avatar.");
       setLoading(false);
       return;
     }
@@ -47,83 +48,45 @@ const Login = () => {
     let user = null;
   
     try {
-      console.log("Starting registration process");
-  
-      // Step 1: Check if username already exists
-      console.log("Checking if username exists");
-      try {
-        const usersRef = collection(db, "users");
-        const q = query(usersRef, where("username", "==", username));
-        const querySnapshot = await getDocs(q);
-        if (!querySnapshot.empty) {
-          console.log("Username already exists");
-          toast.warn("Select another username");
-          setLoading(false);
-          return;
-        }
-      } catch (usernameCheckError) {
-        console.error("Error checking username:", usernameCheckError);
-        throw usernameCheckError;
+      // Check if username already exists
+      const usersRef = collection(db, "users");
+      const q = query(usersRef, where("username", "==", username));
+      const querySnapshot = await getDocs(q);
+      if (!querySnapshot.empty) {
+        toast.warn("Username is already taken. Please choose another.");
+        setLoading(false);
+        return;
       }
   
-      // Step 2: Create user with Firebase Authentication
-      console.log("Creating user with Firebase Authentication");
+      // Create user with Firebase Authentication
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       user = userCredential.user;
-      console.log("User created:", user.uid);
   
-      // Step 3: Upload avatar
-      console.log("Uploading avatar");
-      let imgUrl;
-      try {
-        imgUrl = await upload(avatar.file);
-        console.log("Avatar uploaded, URL:", imgUrl);
-      } catch (uploadError) {
-        console.error("Error uploading avatar:", uploadError);
-        imgUrl = "https://example.com/default-avatar.png"; // Replace with your default avatar URL
-        console.log("Using default avatar URL:", imgUrl);
-      }
+      // Upload avatar
+      let imgUrl = await upload(avatar.file);
   
-      // Step 4: Create user document in Firestore
-      console.log("Creating user document in Firestore");
-      try {
-        await setDoc(doc(db, "users", user.uid), {
-          username,
-          email,
-          avatar: imgUrl,
-          id: user.uid,
-          blocked: [],
-        });
-        console.log("User document created in Firestore");
-      } catch (firestoreError) {
-        console.error("Error creating user document:", firestoreError);
-        throw firestoreError;
-      }
+      // Create user document in Firestore
+      await setDoc(doc(db, "users", user.uid), {
+        username,
+        email,
+        avatar: imgUrl,
+        id: user.uid,
+        blocked: [],
+      });
   
-      // Step 5: Create userchats document
-      console.log("Creating userchats document");
-      try {
-        await setDoc(doc(db, "userchats", user.uid), {
-          chats: [],
-        });
-        console.log("Userchats document created in Firestore");
-      } catch (userchatsError) {
-        console.error("Error creating userchats document:", userchatsError);
-        throw userchatsError;
-      }
+      // Create userchats document
+      await setDoc(doc(db, "userchats", user.uid), {
+        chats: [],
+      });
   
-      toast.success("Account created! You can login now!");
+      toast.success("Account created successfully! You can now log in.");
     } catch (err) {
-      console.error("Error in registration process:", err);
-      if (err.code) console.error("Error code:", err.code);
-      if (err.message) console.error("Error message:", err.message);
-      toast.error(err.message);
+      handleAPIError(err);
   
       // If an error occurred after user creation, delete the user
       if (user) {
         try {
           await user.delete();
-          console.log("User deleted due to registration error");
         } catch (deleteError) {
           console.error("Error deleting user:", deleteError);
         }
@@ -141,18 +104,16 @@ const Login = () => {
     const { email, password } = Object.fromEntries(formData);
 
     if (!email || !password) {
-      toast.warn("Please enter both email and password!");
+      toast.warn("Please enter both email and password.");
       setLoading(false);
       return;
     }
 
     try {
-      console.log("Attempting to log in with email:", email);
       await signInWithEmailAndPassword(auth, email, password);
-      console.log("Login successful");
+      toast.success("Logged in successfully!");
     } catch (err) {
-      console.error("Error during login:", err);
-      toast.error(err.message);
+      handleAPIError(err);
     } finally {
       setLoading(false);
     }
@@ -163,9 +124,9 @@ const Login = () => {
       <div className="item">
         <h2>Welcome back,</h2>
         <form onSubmit={handleLogin}>
-          <input type="text" placeholder="Email" name="email" required />
+          <input type="email" placeholder="Email" name="email" required />
           <input type="password" placeholder="Password" name="password" required />
-          <button disabled={loading}>{loading ? "Loading" : "Sign In"}</button>
+          <button disabled={loading}>{loading ? "Logging in..." : "Sign In"}</button>
         </form>
       </div>
       <div className="separator"></div>
@@ -173,19 +134,20 @@ const Login = () => {
         <h2>Create an Account</h2>
         <form onSubmit={handleRegister}>
           <label htmlFor="file">
-            <img src={avatar.url || "./avatar.png"} alt="" />
+            <img src={avatar.url || "./avatar.png"} alt="Avatar" />
             Upload an image
           </label>
           <input
             type="file"
             id="file"
+            accept="image/*"
             style={{ display: "none" }}
             onChange={handleAvatar}
           />
           <input type="text" placeholder="Username" name="username" required />
-          <input type="text" placeholder="Email" name="email" required />
+          <input type="email" placeholder="Email" name="email" required />
           <input type="password" placeholder="Password" name="password" required />
-          <button disabled={loading}>{loading ? "Loading" : "Sign Up"}</button>
+          <button disabled={loading}>{loading ? "Creating Account..." : "Sign Up"}</button>
         </form>
       </div>
     </div>

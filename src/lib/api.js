@@ -1,7 +1,7 @@
 import OpenAI from 'openai';
+import { handleAPIError } from './errorHandler';
 
 const API_URL = 'https://api.deepgram.com/v1/listen';
-const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
 const ELEVENLABS_API_URL = 'https://api.elevenlabs.io/v1/text-to-speech';
 
 const openai = new OpenAI({
@@ -33,6 +33,7 @@ export const transcribeAudio = async (audioBlob) => {
     return data.results.channels[0].alternatives[0].transcript;
   } catch (error) {
     console.error('Error in transcribeAudio:', error);
+    handleAPIError(error);
     throw error;
   }
 };
@@ -44,7 +45,7 @@ export const getAIResponse = async (message, aiContext, username) => {
   
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
+      model: "gpt-3.5-turbo", // or "gpt-4" if you have access
       messages: [
         { role: "system", content: systemMessage },
         { role: "user", content: message }
@@ -52,10 +53,70 @@ export const getAIResponse = async (message, aiContext, username) => {
       max_tokens: 150,
     });
 
-    console.log("AI response received:", response.choices[0].message.content);
-    return response.choices[0].message.content;
+    if (response.choices && response.choices.length > 0 && response.choices[0].message) {
+      console.log("AI response received:", response.choices[0].message.content);
+      return response.choices[0].message.content;
+    } else {
+      throw new Error("No valid response from AI");
+    }
   } catch (error) {
     console.error("Error getting ChatGPT response:", error);
+    handleAPIError(error);
+    throw error;
+  }
+};
+
+export const getJSONResponse = async (message, aiContext, username) => {
+  console.log(`getJSONResponse called with message: ${message}, aiContext: ${aiContext}, username: ${username}`);
+  
+  const systemMessage = getSystemMessage(aiContext, username) + " Always respond in valid JSON format.";
+  
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4-turbo-preview",
+      messages: [
+        { role: "system", content: systemMessage },
+        { role: "user", content: message }
+      ],
+      response_format: { type: "json_object" },
+    });
+
+    console.log("AI JSON response received:", response.choices[0].message.content);
+    return JSON.parse(response.choices[0].message.content);
+  } catch (error) {
+    console.error("Error getting JSON response:", error);
+    handleAPIError(error);
+    throw error;
+  }
+};
+
+export const getStreamingResponse = async (message, aiContext, username, onUpdate) => {
+  console.log(`getStreamingResponse called with message: ${message}, aiContext: ${aiContext}, username: ${username}`);
+  
+  const systemMessage = getSystemMessage(aiContext, username);
+  
+  try {
+    const stream = await openai.chat.completions.create({
+      model: "gpt-4-turbo-preview",
+      messages: [
+        { role: "system", content: systemMessage },
+        { role: "user", content: message }
+      ],
+      stream: true,
+    });
+
+    let fullResponse = '';
+    for await (const chunk of stream) {
+      const content = chunk.choices[0]?.delta?.content || '';
+      fullResponse += content;
+      onUpdate(content); // Call the update function with each chunk
+    }
+
+    console.log("Full streaming response received:", fullResponse);
+    return fullResponse;
+  } catch (error) {
+    console.error("Error in streaming response:", error);
+    handleAPIError(error);
     throw error;
   }
 };
@@ -76,25 +137,31 @@ function getSystemMessage(aiContext, username) {
 }
 
 export const generateAudio = async (text) => {
-  const response = await fetch(`${ELEVENLABS_API_URL}/21m00Tcm4TlvDq8ikWAM`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "xi-api-key": import.meta.env.VITE_ELEVENLABS_API_KEY,
-    },
-    body: JSON.stringify({
-      text: text,
-      voice_settings: {
-        stability: 0.75,
-        similarity_boost: 0.75,
+  try {
+    const response = await fetch(`${ELEVENLABS_API_URL}/21m00Tcm4TlvDq8ikWAM`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "xi-api-key": import.meta.env.VITE_ELEVENLABS_API_KEY,
       },
-    }),
-  });
+      body: JSON.stringify({
+        text: text,
+        voice_settings: {
+          stability: 0.75,
+          similarity_boost: 0.75,
+        },
+      }),
+    });
 
-  if (!response.ok) {
-    throw new Error('Failed to generate audio');
+    if (!response.ok) {
+      throw new Error('Failed to generate audio');
+    }
+
+    const audioBlob = await response.blob();
+    return URL.createObjectURL(audioBlob);
+  } catch (error) {
+    console.error("Error generating audio:", error);
+    handleAPIError(error);
+    throw error;
   }
-
-  const audioBlob = await response.blob();
-  return URL.createObjectURL(audioBlob);
 };

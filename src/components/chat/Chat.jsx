@@ -1,14 +1,16 @@
 import React, { useEffect, useRef, useState } from "react";
 import "./chat.css";
 import EmojiPicker from "emoji-picker-react";
-import { doc, onSnapshot } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc, arrayUnion } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { useChatStore } from "../../lib/chatStore";
 import { useUserStore } from "../../lib/userStore";
 import upload from "../../lib/upload";
 import { format } from "timeago.js";
 import VoiceInteraction from "../VoiceInteraction";
-import { getAIResponse } from "../../lib/api";
+import { handleAPIError } from "../../lib/errorHandler";
+import { toast } from "react-toastify";
+import { getAIResponse } from "../../lib/api"; // Add this import
 
 const Chat = () => {
   const [messages, setMessages] = useState([]);
@@ -17,7 +19,7 @@ const Chat = () => {
   const [open, setOpen] = useState(false);
 
   const { currentUser } = useUserStore();
-  const { chatId, user, isCurrentUserBlocked, isReceiverBlocked, addMessage } = useChatStore();
+  const { chatId, user, isCurrentUserBlocked, isReceiverBlocked } = useChatStore();
 
   const endRef = useRef(null);
 
@@ -32,7 +34,11 @@ const Chat = () => {
         setMessages(doc.data().messages || []);
       } else {
         console.log("No such document!");
+        toast.error("Chat not found. Please try again.");
       }
+    }, (error) => {
+      console.error("Error fetching chat:", error);
+      handleAPIError(error);
     });
 
     return () => {
@@ -46,15 +52,20 @@ const Chat = () => {
   }, [messages]);
 
   const handleSend = async () => {
-    console.log("handleSend called");
     if (text.trim() === "" && !img.file) return;
 
     let imgUrl = null;
     if (img.file) {
-      imgUrl = await upload(img.file);
+      try {
+        imgUrl = await upload(img.file);
+      } catch (error) {
+        console.error("Error uploading image:", error);
+        handleAPIError(error);
+        return;
+      }
     }
 
-    const message = {
+    const userMessage = {
       id: Date.now().toString(),
       senderId: currentUser.id,
       text,
@@ -62,18 +73,20 @@ const Chat = () => {
       createdAt: new Date().toISOString(),
     };
 
-    console.log("Sending message:", message);
+    try {
+      // Add user message to the chat
+      await updateDoc(doc(db, "chats", chatId), {
+        messages: arrayUnion(userMessage)
+      });
 
-    await addMessage(message);
+      setText("");
+      setImg({ file: null, url: "" });
 
-    console.log("Message added to Firestore");
-
-    if (user.isAI) {
-      console.log("Generating AI response");
-      try {
-        const aiResponse = await getAIResponse(text, user.id, currentUser.username);
-        console.log("AI response received:", aiResponse);
-
+      // If the recipient is an AI agent, generate and add AI response
+      if (user?.isAI) {
+        console.log("Generating AI response for:", user.specialization);
+        const aiResponse = await getAIResponse(text, user.specialization, currentUser.username);
+        
         const aiMessage = {
           id: Date.now().toString(),
           senderId: user.id,
@@ -81,15 +94,16 @@ const Chat = () => {
           createdAt: new Date().toISOString(),
         };
 
-        await addMessage(aiMessage);
-        console.log("AI message added to Firestore");
-      } catch (error) {
-        console.error("Error generating AI response:", error);
-      }
-    }
+        await updateDoc(doc(db, "chats", chatId), {
+          messages: arrayUnion(aiMessage)
+        });
 
-    setText("");
-    setImg({ file: null, url: "" });
+        console.log("AI response added to chat:", aiResponse);
+      }
+    } catch (error) {
+      console.error("Error sending message or getting AI response:", error);
+      handleAPIError(error);
+    }
   };
 
   const handleImg = (e) => {
@@ -109,15 +123,36 @@ const Chat = () => {
   const renderMessage = (message) => {
     const isOwn = message.senderId === currentUser.id;
     return (
-      <div className={`message ${isOwn ? "own" : ""}`} key={message.id}>
+      <div
+        className={`message ${isOwn ? "own" : ""}`}
+        key={message.id || `${message.senderId}-${message.createdAt}`}
+      >
         <div className="texts">
-          {message.type === 'voice' ? (
+          {message.type === "voice" ? (
             <>
-              <audio src={message.audioUrl} controls />
+              {message.audioUrl ? (
+                <audio
+                  src={message.audioUrl}
+                  controls
+                  onError={(e) => {
+                    console.log("Error loading audio, likely an old message. Ignoring.");
+                    e.target.style.display = "none";
+                  }}
+                />
+              ) : (
+                <p>Audio unavailable</p>
+              )}
               <p>{message.text}</p>
             </>
           ) : message.img ? (
-            <img src={message.img} alt="" />
+            <img
+              src={message.img}
+              alt=""
+              onError={(e) => {
+                console.log("Error loading image, likely an old message. Ignoring.");
+                e.target.style.display = "none";
+              }}
+            />
           ) : (
             <p>{message.text}</p>
           )}

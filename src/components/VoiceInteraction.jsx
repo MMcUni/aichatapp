@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useChatStore } from "../lib/chatStore";
 import { useUserStore } from '../lib/userStore';
 import { transcribeAudio, getAIResponse, generateAudio } from '../lib/api';
+import { toast } from 'react-toastify';
 
 const VoiceInteraction = () => {
   const [isRecording, setIsRecording] = useState(false);
@@ -29,8 +30,16 @@ const VoiceInteraction = () => {
       mediaRecorder.current.start();
       setIsRecording(true);
       console.log("Recording started");
+      toast.info("Recording started. Speak now!");
     } catch (err) {
       console.error("Error accessing the microphone", err);
+      if (err.name === 'NotAllowedError') {
+        toast.error("Microphone access denied. Please allow microphone access to use this feature.");
+      } else if (err.name === 'NotFoundError') {
+        toast.error("No microphone detected. Please connect a microphone and try again.");
+      } else {
+        toast.error("Error accessing the microphone. Please try again.");
+      }
     }
   };
 
@@ -39,8 +48,10 @@ const VoiceInteraction = () => {
       console.log("Stopping media recorder");
       mediaRecorder.current.stop();
       setIsRecording(false);
+      toast.info("Recording stopped. Processing your message...");
     } else {
       console.log("Unable to stop recording: mediaRecorder is null or not recording");
+      toast.warn("No active recording to stop.");
     }
   };
 
@@ -86,8 +97,11 @@ const VoiceInteraction = () => {
         type: 'voice',
         audioUrl: audioResponse,
       });
+
+      toast.success("Voice message processed successfully!");
     } catch (error) {
       console.error('Error processing voice interaction:', error);
+      toast.error("Error processing voice message. Please try again.");
     } finally {
       setIsProcessing(false);
       audioChunks.current = [];
