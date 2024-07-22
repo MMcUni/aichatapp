@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import { handleAPIError } from './errorHandler';
+import ErrorHandler from "./errorHandler";
 
 const API_URL = 'https://api.deepgram.com/v1/listen';
 const ELEVENLABS_API_URL = 'https://api.elevenlabs.io/v1/text-to-speech';
@@ -32,8 +32,7 @@ export const transcribeAudio = async (audioBlob) => {
     const data = await response.json();
     return data.results.channels[0].alternatives[0].transcript;
   } catch (error) {
-    console.error('Error in transcribeAudio:', error);
-    handleAPIError(error);
+    ErrorHandler.handle(error, 'Transcribing audio');
     throw error;
   }
 };
@@ -60,8 +59,7 @@ export const getAIResponse = async (message, aiContext, username) => {
       throw new Error("No valid response from AI");
     }
   } catch (error) {
-    console.error("Error getting ChatGPT response:", error);
-    handleAPIError(error);
+    ErrorHandler.handle(error, 'Getting ChatGPT response');
     throw error;
   }
 };
@@ -160,8 +158,7 @@ export const generateAudio = async (text) => {
     const audioBlob = await response.blob();
     return URL.createObjectURL(audioBlob);
   } catch (error) {
-    console.error("Error generating audio:", error);
-    handleAPIError(error);
+    ErrorHandler.handle(error, 'Generating audio');
     throw error;
   }
 };

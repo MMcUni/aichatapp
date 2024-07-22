@@ -8,7 +8,7 @@ import {
 import { auth, db } from "../../lib/firebase";
 import { doc, setDoc, collection, query, where, getDocs } from "firebase/firestore";
 import upload from "../../lib/upload";
-import { handleAPIError } from "../../lib/errorHandler";
+import ErrorHandler from "../../lib/errorHandler";
 
 const Login = () => {
   const [avatar, setAvatar] = useState({
@@ -81,14 +81,13 @@ const Login = () => {
   
       toast.success("Account created successfully! You can now log in.");
     } catch (err) {
-      handleAPIError(err);
-  
+      ErrorHandler.handle(err, 'User registration');
       // If an error occurred after user creation, delete the user
       if (user) {
         try {
           await user.delete();
         } catch (deleteError) {
-          console.error("Error deleting user:", deleteError);
+          ErrorHandler.handle(deleteError, 'Deleting user after failed registration');
         }
       }
     } finally {
@@ -113,7 +112,9 @@ const Login = () => {
       await signInWithEmailAndPassword(auth, email, password);
       toast.success("Logged in successfully!");
     } catch (err) {
-      handleAPIError(err);
+      // Let ErrorHandler handle the error message
+      ErrorHandler.handle(err, 'User login');
+      // Remove the additional toast.error call
     } finally {
       setLoading(false);
     }

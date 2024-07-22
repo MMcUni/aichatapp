@@ -1,18 +1,17 @@
 import { useEffect, useState, useCallback } from "react";
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import ErrorBoundary from "./components/ErrorBoundary";
 import Chat from "./components/chat/Chat";
 import Detail from "./components/detail/Detail";
 import List from "./components/list/List";
 import Login from "./components/login/Login";
-import Notification from "./components/notification/Notification";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "./lib/firebase";
 import { useUserStore } from "./lib/userStore";
 import { useChatStore } from "./lib/chatStore";
 import { useAuthStore } from "./lib/authStore";
-
-// TODO: Known issue - "Missing or insufficient permissions" error occurs after logout.
-// This doesn't affect core functionality but should be investigated in the future if time permits.
-// Potential areas to look into: listener cleanup, Firebase SDK version, security rules.
+import ErrorHandler from "./lib/errorHandler";
 
 const App = () => {
   const { currentUser, isLoading, fetchUserInfo, logout } = useUserStore();
@@ -35,7 +34,7 @@ const App = () => {
         auth.signOut().then(() => {
           console.log("Logged out successfully from App");
         }).catch((error) => {
-          console.error("Error during logout from App:", error);
+          ErrorHandler.handle(error, 'Logout process');
         });
       }, 1000);
     }, 500);
@@ -50,6 +49,8 @@ const App = () => {
           console.log("User info fetched, showing components");
           setIsAuthenticated(true);
           setShowComponents(true);
+        }).catch((error) => {
+          ErrorHandler.handle(error, 'Fetching user info');
         });
       } else {
         console.log("Auth state changed to logged out");
@@ -69,18 +70,31 @@ const App = () => {
   if (isLoading) return <div className="loading">Loading...</div>;
 
   return (
-    <div className="container">
-      {currentUser && showComponents && isAuthenticated ? (
-        <>
-          <List />
-          {chatId && <Chat />}
-          {chatId && <Detail handleLogout={handleLogout} />}
-        </>
-      ) : (
-        <Login />
-      )}
-      <Notification />
-    </div>
+    <ErrorBoundary>
+      <div className="container">
+        {currentUser && showComponents && isAuthenticated ? (
+          <>
+            <List />
+            {chatId && <Chat />}
+            {chatId && <Detail handleLogout={handleLogout} />}
+          </>
+        ) : (
+          <Login />
+        )}
+<ToastContainer 
+          position="bottom-right"
+          autoClose={5000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="light"
+        />
+      </div>
+    </ErrorBoundary>
   );
 };
 

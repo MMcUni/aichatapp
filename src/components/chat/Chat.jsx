@@ -8,9 +8,9 @@ import { useUserStore } from "../../lib/userStore";
 import upload from "../../lib/upload";
 import { format } from "timeago.js";
 import VoiceInteraction from "../VoiceInteraction";
-import { handleAPIError } from "../../lib/errorHandler";
+import ErrorHandler from "../../lib/errorHandler";
 import { toast } from "react-toastify";
-import { getAIResponse } from "../../lib/api"; // Add this import
+import { getAIResponse } from "../../lib/api";
 
 const Chat = () => {
   const [messages, setMessages] = useState([]);
@@ -37,8 +37,7 @@ const Chat = () => {
         toast.error("Chat not found. Please try again.");
       }
     }, (error) => {
-      console.error("Error fetching chat:", error);
-      handleAPIError(error);
+      ErrorHandler.handle(error, 'Fetching chat messages');
     });
 
     return () => {
@@ -59,8 +58,7 @@ const Chat = () => {
       try {
         imgUrl = await upload(img.file);
       } catch (error) {
-        console.error("Error uploading image:", error);
-        handleAPIError(error);
+        ErrorHandler.handle(error, 'Uploading image');
         return;
       }
     }
@@ -101,8 +99,7 @@ const Chat = () => {
         console.log("AI response added to chat:", aiResponse);
       }
     } catch (error) {
-      console.error("Error sending message or getting AI response:", error);
-      handleAPIError(error);
+      ErrorHandler.handle(error, 'Sending message or getting AI response');
     }
   };
 
