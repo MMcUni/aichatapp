@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import "./chat.css";
 import EmojiPicker from "emoji-picker-react";
 import { doc, onSnapshot, updateDoc, arrayUnion } from "firebase/firestore";
@@ -10,7 +10,8 @@ import { format } from "timeago.js";
 import VoiceInteraction from "../common/VoiceInteraction";
 import ErrorHandler from "../../utils/errorHandler";
 import { toast } from "react-toastify";
-import { getAIResponse } from "../../services/api";
+import { getAIResponse, generateAudio } from "../../services/api";
+import { log, error } from '../../utils/logger';
 
 const Chat = () => {
   const [messages, setMessages] = useState([]);
@@ -22,43 +23,58 @@ const Chat = () => {
   const { chatId, user, isCurrentUserBlocked, isReceiverBlocked } = useChatStore();
 
   const endRef = useRef(null);
+  const chatContainerRef = useRef(null);
+  const prevMessagesLengthRef = useRef(0);
+
+  const scrollToBottom = useCallback(() => {
+    if (endRef.current) {
+      setTimeout(() => {
+        endRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      }, 100); // Small delay to ensure DOM has updated
+    }
+  }, []);
 
   useEffect(() => {
-    console.log("Chat component mounted. ChatId:", chatId);
+    log("Chat component mounted. ChatId:", chatId);
     if (!chatId) return;
     
-    console.log("Setting up chat listener for:", chatId);
+    log("Setting up chat listener for:", chatId);
     const unSub = onSnapshot(doc(db, "chats", chatId), (doc) => {
       if (doc.exists()) {
-        console.log("Chat snapshot received:", doc.data());
-        setMessages(doc.data().messages || []);
+        const newMessages = doc.data().messages || [];
+        setMessages(newMessages);
+        if (newMessages.length > prevMessagesLengthRef.current) {
+          scrollToBottom();
+        }
+        prevMessagesLengthRef.current = newMessages.length;
       } else {
-        console.log("No such document!");
+        log("No such document!");
         toast.error("Chat not found. Please try again.");
       }
-    }, (error) => {
-      ErrorHandler.handle(error, 'Fetching chat messages');
+    }, (err) => {
+      ErrorHandler.handle(err, 'Fetching chat messages');
     });
 
     return () => {
-      console.log("Cleaning up chat listener");
+      log("Cleaning up chat listener");
       unSub();
     };
-  }, [chatId]);
+  }, [chatId, scrollToBottom]);
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    // Scroll to bottom when chat is first opened
+    scrollToBottom();
+  }, [chatId, scrollToBottom]);
 
-  const handleSend = async () => {
+  const handleSend = useCallback(async () => {
     if (text.trim() === "" && !img.file) return;
 
     let imgUrl = null;
     if (img.file) {
       try {
         imgUrl = await upload(img.file);
-      } catch (error) {
-        ErrorHandler.handle(error, 'Uploading image');
+      } catch (err) {
+        ErrorHandler.handle(err, 'Uploading image');
         return;
       }
     }
@@ -72,7 +88,6 @@ const Chat = () => {
     };
 
     try {
-      // Add user message to the chat
       await updateDoc(doc(db, "chats", chatId), {
         messages: arrayUnion(userMessage)
       });
@@ -80,30 +95,35 @@ const Chat = () => {
       setText("");
       setImg({ file: null, url: "" });
 
-      // If the recipient is an AI agent, generate and add AI response
       if (user?.isAI) {
-        console.log("Generating AI response for:", user.specialization);
+        log("Generating AI response for:", user);
         const aiResponse = await getAIResponse(text, user.specialization, currentUser.username);
+        log("AI response received:", aiResponse);
         
+        const audioUrl = await generateAudio(aiResponse, user.id);
+        log("Audio URL received:", audioUrl);
+
         const aiMessage = {
-          id: Date.now().toString(),
+          id: (Date.now() + 1).toString(),
           senderId: user.id,
           text: aiResponse,
+          audioUrl: audioUrl,
           createdAt: new Date().toISOString(),
+          type: "voice"
         };
 
         await updateDoc(doc(db, "chats", chatId), {
           messages: arrayUnion(aiMessage)
         });
 
-        console.log("AI response added to chat:", aiResponse);
+        log("AI response added to chat:", aiMessage);
       }
-    } catch (error) {
-      ErrorHandler.handle(error, 'Sending message or getting AI response');
+    } catch (err) {
+      ErrorHandler.handle(err, 'Sending message or getting AI response');
     }
-  };
+  }, [text, img, currentUser.id, chatId, user, getAIResponse, generateAudio]);
 
-  const handleImg = (e) => {
+  const handleImg = useCallback((e) => {
     const file = e.target.files[0];
     if (file) {
       setImg({
@@ -111,18 +131,20 @@ const Chat = () => {
         url: URL.createObjectURL(file),
       });
     }
-  };
+  }, []);
 
-  const handleEmoji = (emojiObject) => {
+  const handleEmoji = useCallback((emojiObject) => {
     setText((prev) => prev + emojiObject.emoji);
-  };
+  }, []);
 
-  const renderMessage = (message) => {
+  const renderMessage = useCallback((message) => {
     const isOwn = message.senderId === currentUser.id;
+    const uniqueKey = `${message.id || message.createdAt}-${Math.random().toString(36).substr(2, 9)}`;
+    
     return (
       <div
         className={`message ${isOwn ? "own" : ""}`}
-        key={message.id || `${message.senderId}-${message.createdAt}`}
+        key={uniqueKey}
       >
         <div className="texts">
           {message.type === "voice" ? (
@@ -132,8 +154,8 @@ const Chat = () => {
                   src={message.audioUrl}
                   controls
                   onError={(e) => {
-                    console.log("Error loading audio, likely an old message. Ignoring.");
-                    e.target.style.display = "none";
+                    log("Error loading audio, removing element");
+                    e.target.parentNode.removeChild(e.target);
                   }}
                 />
               ) : (
@@ -146,8 +168,8 @@ const Chat = () => {
               src={message.img}
               alt=""
               onError={(e) => {
-                console.log("Error loading image, likely an old message. Ignoring.");
-                e.target.style.display = "none";
+                log("Error loading image, removing element");
+                e.target.parentNode.removeChild(e.target);
               }}
             />
           ) : (
@@ -157,7 +179,9 @@ const Chat = () => {
         </div>
       </div>
     );
-  };
+  }, [currentUser.id]);
+
+  const memoizedMessages = useMemo(() => messages.map(renderMessage), [messages, renderMessage]);
 
   return (
     <div className="chat">
@@ -170,8 +194,8 @@ const Chat = () => {
           </div>
         </div>
       </div>
-      <div className="center">
-        {messages.map(renderMessage)}
+      <div className="center" ref={chatContainerRef}>
+        {memoizedMessages}
         <div ref={endRef}></div>
       </div>
       <div className="bottom">

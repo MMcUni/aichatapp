@@ -1,6 +1,7 @@
 import { doc, getDoc } from "firebase/firestore";
 import { create } from "zustand";
 import { db } from "../services/firebase";
+import { log, error, warn, info } from '../utils/logger';
 
 export const useUserStore = create((set) => ({
   currentUser: null,
@@ -18,13 +19,13 @@ export const useUserStore = create((set) => ({
         set({ currentUser: null, isLoading: false });
       }
     } catch (err) {
-      console.log(err);
+      log(err);
       return set({ currentUser: null, isLoading: false });
     }
   },
   resetUserInfo: () => set({ currentUser: null, isLoading: false }),
   logout: () => {
-    console.log("Logging out user in userStore");
+    log("Logging out user in userStore");
     set({ currentUser: null, isLoading: false });
   },
 }));

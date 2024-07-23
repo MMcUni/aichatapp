@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import "./chatList.css";
 import AddUser from "./addUser/AddUser";
 import { useUserStore } from "../../../store/userStore";
@@ -6,30 +6,8 @@ import { doc, getDoc, onSnapshot, updateDoc, collection } from "firebase/firesto
 import { db } from "../../../services/firebase";
 import { useChatStore } from "../../../store/chatStore";
 import { format } from "timeago.js";
-
-const AI_AGENTS = {
-  "doctor-tom": {
-    id: "doctor-tom",
-    username: "Doctor Tom",
-    avatar: "./ai-doctor.png",
-    isAI: true,
-    specialization: "medical",
-  },
-  "walter-weather": {
-    id: "walter-weather",
-    username: "Walter Weather",
-    avatar: "./ai-weather.png",
-    isAI: true,
-    specialization: "weather",
-  },
-  "dave-entertainer": {
-    id: "dave-entertainer",
-    username: "Dave the Entertainer",
-    avatar: "./ai-entertainer.png",
-    isAI: true,
-    specialization: "entertainment",
-  },
-};
+import { AI_AGENTS } from "../../../components/constants/aiAgents";
+import { log, error, warn, info } from '../../../utils/logger';
 
 const ChatList = () => {
   const [chats, setChats] = useState([]);
@@ -47,30 +25,30 @@ const ChatList = () => {
   useEffect(() => {
     const fetchChats = async () => {
       if (!currentUser || !currentUser.id) {
-        console.log("No current user");
+        log("No current user");
         return;
       }
 
-      console.log("Fetching chats for user:", currentUser.id);
+      log("Fetching chats for user:", currentUser.id);
 
       const userChatsRef = doc(db, "userchats", currentUser.id);
       const chatsCollectionRef = collection(db, "chats");
 
       try {
         const unSubUserChats = onSnapshot(userChatsRef, async (userChatsDoc) => {
-          console.log("User chats snapshot received:", userChatsDoc.data());
+          log("User chats snapshot received:", userChatsDoc.data());
           const userChatsData = userChatsDoc.data()?.chats || [];
 
           if (userChatsData.length === 0) {
-            console.log("No chats found for user");
+            log("No chats found for user");
             setChats([]);
             return;
           }
 
           const chatPromises = userChatsData.map(async (chatItem) => {
-            console.log("Processing chat item:", chatItem);
+            log("Processing chat item:", chatItem);
             if (chatItem.chatId.startsWith('ai-assistant')) {
-              console.log("AI assistant chat detected:", chatItem.chatId);
+              log("AI assistant chat detected:", chatItem.chatId);
               const aiId = chatItem.receiverId;
               const aiAgent = AI_AGENTS[aiId];
               if (aiAgent) {
@@ -96,7 +74,7 @@ const ChatList = () => {
                 }
 
                 const userData = userDocSnap.data();
-                console.log("User data fetched for receiverId:", chatItem.receiverId, userData);
+                log("User data fetched for receiverId:", chatItem.receiverId, userData);
                 return { ...chatItem, user: userData };
               } catch (error) {
                 console.error("Error fetching user data:", error);
@@ -106,14 +84,14 @@ const ChatList = () => {
           });
 
           const resolvedChats = (await Promise.all(chatPromises)).filter(Boolean);
-          console.log("Resolved chats:", resolvedChats);
+          log("Resolved chats:", resolvedChats);
           
           resolvedChats.forEach(chat => {
             const chatDocRef = doc(chatsCollectionRef, chat.chatId);
             onSnapshot(chatDocRef, (chatDoc) => {
               if (chatDoc.exists()) {
                 const chatData = chatDoc.data();
-                console.log("Chat data received:", chat.chatId, chatData);
+                log("Chat data received:", chat.chatId, chatData);
                 const messages = chatData.messages || [];
                 const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
                 setChats(prevChats => {
@@ -129,7 +107,7 @@ const ChatList = () => {
                   return updatedChats.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
                 });
               } else {
-                console.log("Chat document does not exist:", chat.chatId);
+                log("Chat document does not exist:", chat.chatId);
               }
             });
           });
@@ -138,7 +116,7 @@ const ChatList = () => {
         });
 
         return () => {
-          console.log("Cleaning up ChatList effect");
+          log("Cleaning up ChatList effect");
           unSubUserChats();
         };
       } catch (error) {
@@ -152,7 +130,7 @@ const ChatList = () => {
   }, [currentUser]);
 
   const handleSelect = async (chat) => {
-    console.log("Selecting chat:", chat);
+    log("Selecting chat:", chat);
     
     if (!chat || !chat.chatId) {
       console.error("Invalid chat selected");
@@ -181,7 +159,7 @@ const ChatList = () => {
       await updateDoc(userChatsRef, {
         chats: userChats,
       });
-      console.log("Updating chat:", chat.chatId, chat.user);
+      log("Updating chat:", chat.chatId, chat.user);
       changeChat(chat.chatId, chat.user);
     } catch (err) {
       console.error("Error updating chat selection:", err);
@@ -192,7 +170,7 @@ const ChatList = () => {
     c.user?.username?.toLowerCase().includes(input.toLowerCase())
   );
 
-  console.log("Rendered chats:", filteredChats);
+  log("Rendered chats:", filteredChats);
 
   return (
     <div className="chatList">

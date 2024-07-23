@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import { log, error, warn, info } from '../utils/logger';
 
 const openai = new OpenAI({
   apiKey: import.meta.env.VITE_OPENAI_API_KEY,
@@ -6,7 +7,7 @@ const openai = new OpenAI({
 });
 
 export const getChatGPTResponse = async (message, specialization = "general", username = "User", context = []) => {
-  console.log(`getChatGPTResponse called with message: ${message}, specialization: ${specialization}, username: ${username}`);
+  log(`getChatGPTResponse called with message: ${message}, specialization: ${specialization}, username: ${username}`);
   
   let systemMessage;
   switch (specialization) {
@@ -38,7 +39,7 @@ export const getChatGPTResponse = async (message, specialization = "general", us
       messages: messages,
     });
 
-    console.log("ChatGPT API response:", response);
+    log("ChatGPT API response:", response);
     return response.choices[0].message.content;
   } catch (error) {
     console.error("Error getting ChatGPT response:", error);

@@ -12,6 +12,7 @@ import { useUserStore } from "./store/userStore";
 import { useChatStore } from "./store/chatStore";
 import { useAuthStore } from "./store/authStore";
 import ErrorHandler from "./utils/errorHandler";
+import { log, error, warn, info } from './utils/logger';
 
 const App = () => {
   const { currentUser, isLoading, fetchUserInfo, logout } = useUserStore();
@@ -20,19 +21,19 @@ const App = () => {
   const [showComponents, setShowComponents] = useState(false);
 
   const handleLogout = useCallback(() => {
-    console.log("Logout process started");
+    log("Logout process started");
     setIsAuthenticated(false);
     setShowComponents(false);
     
     setTimeout(() => {
-      console.log("Resetting chat and user state");
+      log("Resetting chat and user state");
       resetChat();
       logout();
       
       setTimeout(() => {
-        console.log("Signing out from Firebase");
+        log("Signing out from Firebase");
         auth.signOut().then(() => {
-          console.log("Logged out successfully from App");
+          log("Logged out successfully from App");
         }).catch((error) => {
           ErrorHandler.handle(error, 'Logout process');
         });
@@ -41,19 +42,19 @@ const App = () => {
   }, [resetChat, logout, setIsAuthenticated]);
 
   useEffect(() => {
-    console.log("Setting up auth state listener");
+    log("Setting up auth state listener");
     const unSub = onAuthStateChanged(auth, (user) => {
       if (user) {
-        console.log("User logged in, fetching user info");
+        log("User logged in, fetching user info");
         fetchUserInfo(user.uid).then(() => {
-          console.log("User info fetched, showing components");
+          log("User info fetched, showing components");
           setIsAuthenticated(true);
           setShowComponents(true);
         }).catch((error) => {
           ErrorHandler.handle(error, 'Fetching user info');
         });
       } else {
-        console.log("Auth state changed to logged out");
+        log("Auth state changed to logged out");
         setIsAuthenticated(false);
         setShowComponents(false);
         logout();
@@ -62,7 +63,7 @@ const App = () => {
     });
 
     return () => {
-      console.log("Cleaning up auth state listener");
+      log("Cleaning up auth state listener");
       unSub();
     };
   }, [fetchUserInfo, logout, resetChat, setIsAuthenticated]);

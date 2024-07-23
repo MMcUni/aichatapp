@@ -5,6 +5,7 @@ import { db } from "../../services/firebase";
 import { useUserStore } from "../../store/userStore";
 import { useAuthStore } from "../../store/authStore";
 import "./detail.css";
+import { log, error, warn, info } from '../../utils/logger';
 
 const Detail = ({ handleLogout }) => {
   const { chatId, user, isCurrentUserBlocked, isReceiverBlocked, changeBlock } = useChatStore();
@@ -14,7 +15,7 @@ const Detail = ({ handleLogout }) => {
   const unsubscribeRef = useRef(null);
 
   const cleanupListeners = useCallback(() => {
-    console.log("Cleaning up listeners in Detail");
+    log("Cleaning up listeners in Detail");
     if (unsubscribeRef.current) {
       unsubscribeRef.current();
       unsubscribeRef.current = null;
@@ -28,14 +29,14 @@ const Detail = ({ handleLogout }) => {
   }, [isAuthenticated, cleanupListeners]);
 
   useEffect(() => {
-    console.log("Setting up user details listener");
+    log("Setting up user details listener");
 
     if (user && currentUser && isAuthenticated) {
-      console.log("Setting up new listener");
+      log("Setting up new listener");
       const userDocRef = doc(db, "users", user.id);
       unsubscribeRef.current = onSnapshot(userDocRef, (doc) => {
         if (isAuthenticated && doc.exists()) {
-          console.log("Received user details update");
+          log("Received user details update");
           setUserDetails(doc.data());
         }
       }, (error) => {
@@ -57,7 +58,7 @@ const Detail = ({ handleLogout }) => {
       });
       changeBlock();
     } catch (err) {
-      console.log(err);
+      log(err);
     }
   };
 

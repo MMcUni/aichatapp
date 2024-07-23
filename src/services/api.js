@@ -1,13 +1,22 @@
 import OpenAI from 'openai';
 import ErrorHandler from "../utils/errorHandler";
+import { AI_AGENTS } from "../components/constants/aiAgents";
+import { log, error, warn, info } from '../utils/logger';
 
 const API_URL = 'https://api.deepgram.com/v1/listen';
 const ELEVENLABS_API_URL = 'https://api.elevenlabs.io/v1/text-to-speech';
 
 const openai = new OpenAI({
   apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-  dangerouslyAllowBrowser: true // Note: In production, we will use a backend to make API calls
+  dangerouslyAllowBrowser: true
 });
+
+const VOICE_IDS = {
+  'doctor-tom': 'rrIua2BxiuHg5SA4dAwK', // Rob
+  'walter-weather': 'gUbIduqGzBP438teh4ZA', // Scottish Lewis
+  'dave-entertainer': '9yzdeviXkFddZ4Oz8Mok', // Lutz Laughs
+  'default': '21m00Tcm4TlvDq8ikWAM' // Default voice
+};
 
 export const transcribeAudio = async (audioBlob) => {
   try {
@@ -38,13 +47,13 @@ export const transcribeAudio = async (audioBlob) => {
 };
 
 export const getAIResponse = async (message, aiContext, username) => {
-  console.log(`getAIResponse called with message: ${message}, aiContext: ${aiContext}, username: ${username}`);
+  log(`getAIResponse called with message: ${message}, aiContext: ${aiContext}, username: ${username}`);
   
   const systemMessage = getSystemMessage(aiContext, username);
   
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo", // or "gpt-4" if you have access
+      model: "gpt-3.5-turbo",
       messages: [
         { role: "system", content: systemMessage },
         { role: "user", content: message }
@@ -53,7 +62,7 @@ export const getAIResponse = async (message, aiContext, username) => {
     });
 
     if (response.choices && response.choices.length > 0 && response.choices[0].message) {
-      console.log("AI response received:", response.choices[0].message.content);
+      log("AI response received:", response.choices[0].message.content);
       return response.choices[0].message.content;
     } else {
       throw new Error("No valid response from AI");
@@ -64,8 +73,82 @@ export const getAIResponse = async (message, aiContext, username) => {
   }
 };
 
+export const generateAudio = async (text, agentId) => {
+  try {
+    log("Generating audio for agent ID:", agentId);
+    log("Available voice IDs:", VOICE_IDS);
+    log("Selected voice ID:", VOICE_IDS[agentId] || VOICE_IDS.default);
+    log("generateAudio called with agentId:", agentId);
+    log("VOICE_IDS:", VOICE_IDS);
+    
+    const voiceId = VOICE_IDS[agentId] || VOICE_IDS.default;
+    
+    const apiUrl = `${ELEVENLABS_API_URL}/${voiceId}`;
+    log("ElevenLabs API URL:", apiUrl);
+    log("ElevenLabs API Key:", import.meta.env.VITE_ELEVENLABS_API_KEY);
+    log(`Voice ID selected: ${voiceId}`);
+    
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "xi-api-key": import.meta.env.VITE_ELEVENLABS_API_KEY,
+      },
+      body: JSON.stringify({
+        text: text,
+        voice_settings: {
+          stability: 0.75,
+          similarity_boost: 0.75,
+        },
+      }),
+    });
+
+    log('ElevenLabs API response status:', response.status);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('ElevenLabs API error:', errorText);
+      throw new Error('Failed to generate audio');
+    }
+
+    const audioBlob = await response.blob();
+    log('Audio blob created:', audioBlob);
+    
+    const url = URL.createObjectURL(audioBlob);
+    log('Audio URL created:', url);
+    
+    return url;
+  } catch (error) {
+    console.error('Error generating audio:', error);
+    ErrorHandler.handle(error, 'Generating audio');
+    
+    // Attempt to use default voice if custom voice fails
+    if (agentId !== 'default') {
+      log('Attempting to use default voice...');
+      return generateAudio(text, 'default');
+    }
+    
+    throw error;
+  }
+};
+
+function getSystemMessage(aiContext, username) {
+  const baseMessage = `You are an AI assistant. Keep your responses concise, ideally one short paragraph. Address the user as ${username}. `;
+  
+  switch (aiContext) {
+    case 'doctor-tom':
+      return baseMessage + "You are Doctor Tom, a medical assistant. Provide helpful medical advice and information. Always remind the user to consult with a real doctor for serious concerns.";
+    case 'walter-weather':
+      return baseMessage + "You are Walter Weather, a weather specialist. Provide weather forecasts, climate information, and interesting weather facts. Remind users that for critical weather situations, they should consult official weather services.";
+    case 'dave-entertainer':
+      return baseMessage + "You are Dave the Entertainer, an entertainment expert. Share fun facts, jokes, movie recommendations, and general entertainment knowledge. Keep the conversation light and enjoyable.";
+    default:
+      return baseMessage + "Provide helpful and friendly assistance.";
+  }
+}
+
 export const getJSONResponse = async (message, aiContext, username) => {
-  console.log(`getJSONResponse called with message: ${message}, aiContext: ${aiContext}, username: ${username}`);
+  log(`getJSONResponse called with message: ${message}, aiContext: ${aiContext}, username: ${username}`);
   
   const systemMessage = getSystemMessage(aiContext, username) + " Always respond in valid JSON format.";
   
@@ -79,17 +162,17 @@ export const getJSONResponse = async (message, aiContext, username) => {
       response_format: { type: "json_object" },
     });
 
-    console.log("AI JSON response received:", response.choices[0].message.content);
+    log("AI JSON response received:", response.choices[0].message.content);
     return JSON.parse(response.choices[0].message.content);
   } catch (error) {
     console.error("Error getting JSON response:", error);
-    handleAPIError(error);
+    ErrorHandler.handle(error, 'Getting JSON response');
     throw error;
   }
 };
 
 export const getStreamingResponse = async (message, aiContext, username, onUpdate) => {
-  console.log(`getStreamingResponse called with message: ${message}, aiContext: ${aiContext}, username: ${username}`);
+  log(`getStreamingResponse called with message: ${message}, aiContext: ${aiContext}, username: ${username}`);
   
   const systemMessage = getSystemMessage(aiContext, username);
   
@@ -110,55 +193,11 @@ export const getStreamingResponse = async (message, aiContext, username, onUpdat
       onUpdate(content); // Call the update function with each chunk
     }
 
-    console.log("Full streaming response received:", fullResponse);
+    log("Full streaming response received:", fullResponse);
     return fullResponse;
   } catch (error) {
     console.error("Error in streaming response:", error);
-    handleAPIError(error);
-    throw error;
-  }
-};
-
-function getSystemMessage(aiContext, username) {
-  const baseMessage = `You are an AI assistant. Keep your responses concise, ideally one short paragraph. Address the user as ${username}. `;
-  
-  switch (aiContext) {
-    case 'doctor-tom':
-      return baseMessage + "You are Doctor Tom, a medical assistant. Provide helpful medical advice and information. Always remind the user to consult with a real doctor for serious concerns.";
-    case 'walter-weather':
-      return baseMessage + "You are Walter Weather, a weather specialist. Provide weather forecasts, climate information, and interesting weather facts. Remind users that for critical weather situations, they should consult official weather services.";
-    case 'dave-entertainer':
-      return baseMessage + "You are Dave the Entertainer, an entertainment expert. Share fun facts, jokes, movie recommendations, and general entertainment knowledge. Keep the conversation light and enjoyable.";
-    default:
-      return baseMessage + "Provide helpful and friendly assistance.";
-  }
-}
-
-export const generateAudio = async (text) => {
-  try {
-    const response = await fetch(`${ELEVENLABS_API_URL}/21m00Tcm4TlvDq8ikWAM`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "xi-api-key": import.meta.env.VITE_ELEVENLABS_API_KEY,
-      },
-      body: JSON.stringify({
-        text: text,
-        voice_settings: {
-          stability: 0.75,
-          similarity_boost: 0.75,
-        },
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to generate audio');
-    }
-
-    const audioBlob = await response.blob();
-    return URL.createObjectURL(audioBlob);
-  } catch (error) {
-    ErrorHandler.handle(error, 'Generating audio');
+    ErrorHandler.handle(error, 'Getting streaming response');
     throw error;
   }
 };

@@ -1,3 +1,4 @@
+import React, { useState } from "react";
 import "./addUser.css";
 import { db } from "../../../../services/firebase";
 import {
@@ -11,38 +12,16 @@ import {
   updateDoc,
   where,
 } from "firebase/firestore";
-import { useState } from "react";
 import { useUserStore } from "../../../../store/userStore";
-
-const AI_AGENTS = [
-  {
-    id: "doctor-tom",
-    username: "Doctor Tom",
-    avatar: "./ai-doctor.png",
-    isAI: true,
-    specialization: "medical",
-  },
-  {
-    id: "walter-weather",
-    username: "Walter Weather",
-    avatar: "./ai-weather.png",
-    isAI: true,
-    specialization: "weather",
-  },
-  {
-    id: "dave-entertainer",
-    username: "Dave the Entertainer",
-    avatar: "./ai-entertainer.png",
-    isAI: true,
-    specialization: "entertainment",
-  },
-];
+import { AI_AGENTS } from "../../../constants/aiAgents";
+import { log, error, warn, info } from "../../../../utils/logger";
 
 const AddUser = ({ setChats }) => {
   const [user, setUser] = useState(null);
   const [error, setError] = useState(null);
   const [searchPerformed, setSearchPerformed] = useState(false);
   const { currentUser } = useUserStore();
+
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -52,7 +31,7 @@ const AddUser = ({ setChats }) => {
     const formData = new FormData(e.target);
     const username = formData.get("username");
 
-    const aiAgent = AI_AGENTS.find(agent => agent.username.toLowerCase() === username.toLowerCase());
+    const aiAgent = Object.values(AI_AGENTS).find(agent => agent.username.toLowerCase() === username.toLowerCase());
     if (aiAgent) {
       setUser(aiAgent);
     } else {
@@ -66,7 +45,7 @@ const AddUser = ({ setChats }) => {
           setError("User not found");
         }
       } catch (err) {
-        console.log(err);
+        log(err);
         setError("An error occurred while searching");
       }
     }
@@ -86,12 +65,10 @@ const AddUser = ({ setChats }) => {
       const chatDoc = await getDoc(chatDocRef);
   
       if (!chatDoc.exists()) {
-        // Create a chat in chats collection
         await setDoc(chatDocRef, { messages: [] });
   
         const currentTime = new Date().toISOString();
   
-        // Update userChats for current user
         const currentUserChatsRef = doc(db, "userchats", currentUser.id);
         const currentUserChatsDoc = await getDoc(currentUserChatsRef);
         
@@ -118,7 +95,6 @@ const AddUser = ({ setChats }) => {
           });
         }
   
-        // We don't need to update userChats for AI assistant
         if (!user.isAI) {
           const userChatsRef = doc(db, "userchats", user.id);
           const userChatsDoc = await getDoc(userChatsRef);
@@ -147,7 +123,6 @@ const AddUser = ({ setChats }) => {
           }
         }
   
-        // Update local state
         setChats((prevChats) => {
           if (!prevChats.some(chat => chat.chatId === chatId)) {
             return [
@@ -176,7 +151,7 @@ const AddUser = ({ setChats }) => {
         setError("Chat already exists");
       }
     } catch (err) {
-      console.log(err);
+      log(err);
       setError("An error occurred while adding the user");
     }
   };
@@ -201,7 +176,7 @@ const AddUser = ({ setChats }) => {
         <div className="ai-agents">
           <h3>Available AI Agents:</h3>
           <ul>
-            {AI_AGENTS.map((agent) => (
+            {Object.values(AI_AGENTS).map((agent) => (
               <li key={agent.id} onClick={() => setUser(agent)}>
                 <img src={agent.avatar} alt={agent.username} />
                 <span>{agent.username}</span>
