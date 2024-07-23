@@ -2,15 +2,15 @@ import React, { useEffect, useRef, useState } from "react";
 import "./chat.css";
 import EmojiPicker from "emoji-picker-react";
 import { doc, onSnapshot, updateDoc, arrayUnion } from "firebase/firestore";
-import { db } from "../../lib/firebase";
-import { useChatStore } from "../../lib/chatStore";
-import { useUserStore } from "../../lib/userStore";
-import upload from "../../lib/upload";
+import { db } from "../../services/firebase";
+import { useChatStore } from "../../store/chatStore";
+import { useUserStore } from "../../store/userStore";
+import upload from "../../utils/upload";
 import { format } from "timeago.js";
-import VoiceInteraction from "../VoiceInteraction";
-import ErrorHandler from "../../lib/errorHandler";
+import VoiceInteraction from "../common/VoiceInteraction";
+import ErrorHandler from "../../utils/errorHandler";
 import { toast } from "react-toastify";
-import { getAIResponse } from "../../lib/api";
+import { getAIResponse } from "../../services/api";
 
 const Chat = () => {
   const [messages, setMessages] = useState([]);

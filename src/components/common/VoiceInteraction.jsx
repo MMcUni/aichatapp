@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
-import { useChatStore } from "../lib/chatStore";
-import { useUserStore } from '../lib/userStore';
-import { transcribeAudio, getAIResponse, generateAudio } from '../lib/api';
+import { useChatStore } from "../../store/chatStore";
+import { useUserStore } from '../../store/userStore';
+import { transcribeAudio, getAIResponse, generateAudio } from '../../services/api';
 import { toast } from 'react-toastify';
 
 const VoiceInteraction = () => {

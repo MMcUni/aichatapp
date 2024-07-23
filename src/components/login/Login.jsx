@@ -5,10 +5,10 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
 } from "firebase/auth";
-import { auth, db } from "../../lib/firebase";
+import { auth, db } from "../../services/firebase";
 import { doc, setDoc, collection, query, where, getDocs } from "firebase/firestore";
-import upload from "../../lib/upload";
-import ErrorHandler from "../../lib/errorHandler";
+import upload from "../../utils/upload";
+import ErrorHandler from "../../utils/errorHandler";
 
 const Login = () => {
   const [avatar, setAvatar] = useState({

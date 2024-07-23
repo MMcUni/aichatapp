@@ -1,5 +1,5 @@
 import "./addUser.css";
-import { db } from "../../../../lib/firebase";
+import { db } from "../../../../services/firebase";
 import {
   arrayUnion,
   collection,
@@ -12,7 +12,7 @@ import {
   where,
 } from "firebase/firestore";
 import { useState } from "react";
-import { useUserStore } from "../../../../lib/userStore";
+import { useUserStore } from "../../../../store/userStore";
 
 const AI_AGENTS = [
   {

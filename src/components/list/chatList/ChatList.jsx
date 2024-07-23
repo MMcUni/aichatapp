@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import "./chatList.css";
 import AddUser from "./addUser/AddUser";
-import { useUserStore } from "../../../lib/userStore";
+import { useUserStore } from "../../../store/userStore";
 import { doc, getDoc, onSnapshot, updateDoc, collection } from "firebase/firestore";
-import { db } from "../../../lib/firebase";
-import { useChatStore } from "../../../lib/chatStore";
+import { db } from "../../../services/firebase";
+import { useChatStore } from "../../../store/chatStore";
 import { format } from "timeago.js";
 
 const AI_AGENTS = {

@@ -1,17 +1,17 @@
 import { useEffect, useState, useCallback } from "react";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import ErrorBoundary from "./components/ErrorBoundary";
+import ErrorBoundary from "./components/common/ErrorBoundary";
 import Chat from "./components/chat/Chat";
 import Detail from "./components/detail/Detail";
 import List from "./components/list/List";
 import Login from "./components/login/Login";
 import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "./lib/firebase";
-import { useUserStore } from "./lib/userStore";
-import { useChatStore } from "./lib/chatStore";
-import { useAuthStore } from "./lib/authStore";
-import ErrorHandler from "./lib/errorHandler";
+import { auth } from "./services/firebase";
+import { useUserStore } from "./store/userStore";
+import { useChatStore } from "./store/chatStore";
+import { useAuthStore } from "./store/authStore";
+import ErrorHandler from "./utils/errorHandler";
 
 const App = () => {
   const { currentUser, isLoading, fetchUserInfo, logout } = useUserStore();

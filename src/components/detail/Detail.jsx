@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { arrayRemove, arrayUnion, doc, updateDoc, onSnapshot } from "firebase/firestore";
-import { useChatStore } from "../../lib/chatStore";
-import { db } from "../../lib/firebase";
-import { useUserStore } from "../../lib/userStore";
-import { useAuthStore } from "../../lib/authStore";
+import { useChatStore } from "../../store/chatStore";
+import { db } from "../../services/firebase";
+import { useUserStore } from "../../store/userStore";
+import { useAuthStore } from "../../store/authStore";
 import "./detail.css";
 
 const Detail = ({ handleLogout }) => {

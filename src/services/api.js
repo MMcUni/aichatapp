@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import ErrorHandler from "./errorHandler";
+import ErrorHandler from "../utils/errorHandler";
 
 const API_URL = 'https://api.deepgram.com/v1/listen';
 const ELEVENLABS_API_URL = 'https://api.elevenlabs.io/v1/text-to-speech';
