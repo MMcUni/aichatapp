@@ -65,8 +65,8 @@ export const useChatStore = create((set, get) => ({
     }
   },
 
-  addMessage: async (message) => {
-    const { chatId } = get();
+  addMessage: async (message, specificChatId = null) => {
+    const chatId = specificChatId || get().chatId;
     if (!chatId) {
       console.error("No chatId available");
       return;
@@ -82,12 +82,13 @@ export const useChatStore = create((set, get) => ({
 
       log("Message added to Firestore");
 
-      // Update local state
-      set((state) => ({
-        messages: [...state.messages, message]
-      }));
-
-      log("Local state updated");
+      // Update local state only if it's the current chat
+      if (chatId === get().chatId) {
+        set((state) => ({
+          messages: [...state.messages, message]
+        }));
+        log("Local state updated");
+      }
 
       // Update last message in userchats collection
       const currentUser = useUserStore.getState().currentUser;
@@ -111,9 +112,9 @@ export const useChatStore = create((set, get) => ({
         }
       };
 
-      await updateLastMessage(currentUser.id, user.id);
-      if (!user.isAI) {
-        await updateLastMessage(user.id, currentUser.id);
+      await updateLastMessage(currentUser.id, user?.id || message.senderId);
+      if (!user?.isAI && user?.id !== message.senderId) {
+        await updateLastMessage(user?.id || message.senderId, currentUser.id);
       }
 
     } catch (error) {
@@ -129,7 +130,11 @@ export const useChatStore = create((set, get) => ({
   },
 
   resetChat: () => {
-    log("Resetting chat");
+    log("Resetting chat and cleaning up listeners");
+    // Add this line to forcefully disable all active listeners
+    if (window.firebase && window.firebase.firestore) {
+      window.firebase.firestore().disableNetwork();
+    }
     set({
       chatId: null,
       user: null,

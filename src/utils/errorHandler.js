@@ -3,6 +3,9 @@ import { toast } from 'react-toastify';
 class ErrorHandler {
   static handle(error, context = '') {
     console.error(`Error in ${context}:`, error);
+    console.error("Error code:", error.code);
+    console.error("Error message:", error.message);
+    console.error("Full error object:", JSON.stringify(error, null, 2));
 
     let message = 'An unexpected error occurred. Please try again.';
 

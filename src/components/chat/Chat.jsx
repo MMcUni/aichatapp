@@ -11,7 +11,9 @@ import VoiceInteraction from "../common/VoiceInteraction";
 import ErrorHandler from "../../utils/errorHandler";
 import { toast } from "react-toastify";
 import { getAIResponse, generateAudio } from "../../services/api";
-import { log, error } from '../../utils/logger';
+import { log, error } from "../../utils/logger";
+import { parseReminderInput, formatReminderResponse } from "../../utils/reminderParser";
+import { useReminderStore } from "../../store/reminderStore";
 
 const Chat = () => {
   const [messages, setMessages] = useState([]);
@@ -21,6 +23,7 @@ const Chat = () => {
 
   const { currentUser } = useUserStore();
   const { chatId, user, isCurrentUserBlocked, isReceiverBlocked } = useChatStore();
+  const { addReminder } = useReminderStore();
 
   const endRef = useRef(null);
   const chatContainerRef = useRef(null);
@@ -29,8 +32,8 @@ const Chat = () => {
   const scrollToBottom = useCallback(() => {
     if (endRef.current) {
       setTimeout(() => {
-        endRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
-      }, 100); // Small delay to ensure DOM has updated
+        endRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
+      }, 100);
     }
   }, []);
 
@@ -39,21 +42,25 @@ const Chat = () => {
     if (!chatId) return;
     
     log("Setting up chat listener for:", chatId);
-    const unSub = onSnapshot(doc(db, "chats", chatId), (doc) => {
-      if (doc.exists()) {
-        const newMessages = doc.data().messages || [];
-        setMessages(newMessages);
-        if (newMessages.length > prevMessagesLengthRef.current) {
-          scrollToBottom();
+    const unSub = onSnapshot(
+      doc(db, "chats", chatId),
+      (doc) => {
+        if (doc.exists()) {
+          const newMessages = doc.data().messages || [];
+          setMessages(newMessages);
+          if (newMessages.length > prevMessagesLengthRef.current) {
+            scrollToBottom();
+          }
+          prevMessagesLengthRef.current = newMessages.length;
+        } else {
+          log("No such document!");
+          toast.error("Chat not found. Please try again.");
         }
-        prevMessagesLengthRef.current = newMessages.length;
-      } else {
-        log("No such document!");
-        toast.error("Chat not found. Please try again.");
+      },
+      (err) => {
+        ErrorHandler.handle(err, "Fetching chat messages");
       }
-    }, (err) => {
-      ErrorHandler.handle(err, 'Fetching chat messages');
-    });
+    );
 
     return () => {
       log("Cleaning up chat listener");
@@ -62,7 +69,6 @@ const Chat = () => {
   }, [chatId, scrollToBottom]);
 
   useEffect(() => {
-    // Scroll to bottom when chat is first opened
     scrollToBottom();
   }, [chatId, scrollToBottom]);
 
@@ -74,7 +80,7 @@ const Chat = () => {
       try {
         imgUrl = await upload(img.file);
       } catch (err) {
-        ErrorHandler.handle(err, 'Uploading image');
+        ErrorHandler.handle(err, "Uploading image");
         return;
       }
     }
@@ -89,7 +95,7 @@ const Chat = () => {
 
     try {
       await updateDoc(doc(db, "chats", chatId), {
-        messages: arrayUnion(userMessage)
+        messages: arrayUnion(userMessage),
       });
 
       setText("");
@@ -97,31 +103,61 @@ const Chat = () => {
 
       if (user?.isAI) {
         log("Generating AI response for:", user);
-        const aiResponse = await getAIResponse(text, user.specialization, currentUser.username);
+        
+        let aiResponse;
+        if (user.specialization === "medication_reminders") {
+          log("Parsing reminder input:", text);
+          const parsedReminder = parseReminderInput(text);
+          log("Parsed reminder:", parsedReminder);
+          
+          if (parsedReminder.medication && parsedReminder.time) {
+            log("Adding reminder for user:", currentUser.id);
+            try {
+              await addReminder(currentUser.id, parsedReminder);
+              log("Reminder added successfully");
+              aiResponse = formatReminderResponse(parsedReminder);
+            } catch (reminderError) {
+              error("Error adding reminder:", reminderError);
+              aiResponse = "I'm sorry, there was an error setting your reminder. Please try again.";
+            }
+          } else {
+            log("Incomplete reminder information");
+            aiResponse = "I'm sorry, I couldn't understand your reminder request. Please try again with a medication name and time.";
+          }
+        } else {
+          aiResponse = await getAIResponse(text, user.specialization, currentUser.username);
+        }
+        
         log("AI response received:", aiResponse);
         
-        const audioUrl = await generateAudio(aiResponse, user.id);
-        log("Audio URL received:", audioUrl);
+        if (aiResponse) {
+          log("Attempting to generate audio for response:", aiResponse);
+          const audioUrl = await generateAudio(aiResponse, user.id);
+          log("Audio URL received:", audioUrl);
 
-        const aiMessage = {
-          id: (Date.now() + 1).toString(),
-          senderId: user.id,
-          text: aiResponse,
-          audioUrl: audioUrl,
-          createdAt: new Date().toISOString(),
-          type: "voice"
-        };
+          const aiMessage = {
+            id: (Date.now() + 1).toString(),
+            senderId: user.id,
+            text: aiResponse,
+            audioUrl: audioUrl,
+            createdAt: new Date().toISOString(),
+            type: "voice",
+          };
 
-        await updateDoc(doc(db, "chats", chatId), {
-          messages: arrayUnion(aiMessage)
-        });
+          await updateDoc(doc(db, "chats", chatId), {
+            messages: arrayUnion(aiMessage),
+          });
 
-        log("AI response added to chat:", aiMessage);
+          log("AI response added to chat:", aiMessage);
+        } else {
+          error("No AI response received");
+          toast.error("Failed to get AI response. Please try again.");
+        }
       }
     } catch (err) {
-      ErrorHandler.handle(err, 'Sending message or getting AI response');
+      ErrorHandler.handle(err, "Sending message or getting AI response");
     }
-  }, [text, img, currentUser.id, chatId, user, getAIResponse, generateAudio]);
+  }, [text, img, currentUser.id, chatId, user, getAIResponse, generateAudio, addReminder]);
 
   const handleImg = useCallback((e) => {
     const file = e.target.files[0];
@@ -142,10 +178,7 @@ const Chat = () => {
     const uniqueKey = `${message.id || message.createdAt}-${Math.random().toString(36).substr(2, 9)}`;
     
     return (
-      <div
-        className={`message ${isOwn ? "own" : ""}`}
-        key={uniqueKey}
-      >
+      <div className={`message ${isOwn ? "own" : ""}`} key={uniqueKey}>
         <div className="texts">
           {message.type === "voice" ? (
             <>

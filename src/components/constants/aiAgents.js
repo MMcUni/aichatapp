@@ -20,4 +20,11 @@ export const AI_AGENTS = {
     isAI: true,
     specialization: "entertainment",
   },
+  "med-reminder": {
+    id: "med-reminder",
+    username: "MedRemind",
+    avatar: "./ai-med-reminder.png",
+    isAI: true,
+    specialization: "medication_reminders",
+  },
 };

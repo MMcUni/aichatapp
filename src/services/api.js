@@ -1,74 +1,80 @@
-import OpenAI from 'openai';
+import OpenAI from "openai";
 import ErrorHandler from "../utils/errorHandler";
 import { AI_AGENTS } from "../components/constants/aiAgents";
-import { log, error, warn, info } from '../utils/logger';
+import { log, error, warn, info } from "../utils/logger";
 
-const API_URL = 'https://api.deepgram.com/v1/listen';
-const ELEVENLABS_API_URL = 'https://api.elevenlabs.io/v1/text-to-speech';
+const API_URL = "https://api.deepgram.com/v1/listen";
+const ELEVENLABS_API_URL = "https://api.elevenlabs.io/v1/text-to-speech";
 
 const openai = new OpenAI({
   apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-  dangerouslyAllowBrowser: true
+  dangerouslyAllowBrowser: true,
 });
 
 const VOICE_IDS = {
-  'doctor-tom': 'rrIua2BxiuHg5SA4dAwK', // Rob
-  'walter-weather': 'gUbIduqGzBP438teh4ZA', // Scottish Lewis
-  'dave-entertainer': '9yzdeviXkFddZ4Oz8Mok', // Lutz Laughs
-  'default': '21m00Tcm4TlvDq8ikWAM' // Default voice
+  "doctor-tom": "rrIua2BxiuHg5SA4dAwK", // Rob
+  "walter-weather": "gUbIduqGzBP438teh4ZA", // Scottish Lewis
+  "dave-entertainer": "9yzdeviXkFddZ4Oz8Mok", // Lutz Laughs
+  default: "21m00Tcm4TlvDq8ikWAM", // Default voice
 };
 
 export const transcribeAudio = async (audioBlob) => {
   try {
     const formData = new FormData();
-    formData.append('audio', audioBlob);
+    formData.append("audio", audioBlob);
 
     const response = await fetch(API_URL, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Authorization': `Token ${import.meta.env.VITE_DEEPGRAM_API_KEY}`,
-        'Content-Type': 'audio/webm',
+        Authorization: `Token ${import.meta.env.VITE_DEEPGRAM_API_KEY}`,
+        "Content-Type": "audio/webm",
       },
       body: audioBlob,
     });
 
     if (!response.ok) {
       const errorBody = await response.text();
-      console.error('Deepgram API Error:', response.status, errorBody);
+      console.error("Deepgram API Error:", response.status, errorBody);
       throw new Error(`Transcription failed: ${response.status} ${errorBody}`);
     }
 
     const data = await response.json();
     return data.results.channels[0].alternatives[0].transcript;
   } catch (error) {
-    ErrorHandler.handle(error, 'Transcribing audio');
+    ErrorHandler.handle(error, "Transcribing audio");
     throw error;
   }
 };
 
 export const getAIResponse = async (message, aiContext, username) => {
-  log(`getAIResponse called with message: ${message}, aiContext: ${aiContext}, username: ${username}`);
-  
+  log(
+    `getAIResponse called with message: ${message}, aiContext: ${aiContext}, username: ${username}`
+  );
+
   const systemMessage = getSystemMessage(aiContext, username);
-  
+
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [
         { role: "system", content: systemMessage },
-        { role: "user", content: message }
+        { role: "user", content: message },
       ],
       max_tokens: 150,
     });
 
-    if (response.choices && response.choices.length > 0 && response.choices[0].message) {
+    if (
+      response.choices &&
+      response.choices.length > 0 &&
+      response.choices[0].message
+    ) {
       log("AI response received:", response.choices[0].message.content);
       return response.choices[0].message.content;
     } else {
       throw new Error("No valid response from AI");
     }
   } catch (error) {
-    ErrorHandler.handle(error, 'Getting ChatGPT response');
+    ErrorHandler.handle(error, "Getting ChatGPT response");
     throw error;
   }
 };
@@ -80,14 +86,19 @@ export const generateAudio = async (text, agentId) => {
     log("Selected voice ID:", VOICE_IDS[agentId] || VOICE_IDS.default);
     log("generateAudio called with agentId:", agentId);
     log("VOICE_IDS:", VOICE_IDS);
-    
+
     const voiceId = VOICE_IDS[agentId] || VOICE_IDS.default;
-    
+
     const apiUrl = `${ELEVENLABS_API_URL}/${voiceId}`;
     log("ElevenLabs API URL:", apiUrl);
     log("ElevenLabs API Key:", import.meta.env.VITE_ELEVENLABS_API_KEY);
     log(`Voice ID selected: ${voiceId}`);
-    
+    log(`Text to be converted to speech: ${text}`); // Add this log
+
+    if (!text) {
+      throw new Error("No text provided for audio generation");
+    }
+
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
@@ -103,61 +114,79 @@ export const generateAudio = async (text, agentId) => {
       }),
     });
 
-    log('ElevenLabs API response status:', response.status);
+    log("ElevenLabs API response status:", response.status);
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('ElevenLabs API error:', errorText);
-      throw new Error('Failed to generate audio');
+      console.error("ElevenLabs API error:", errorText);
+      throw new Error(`Failed to generate audio: ${errorText}`);
     }
 
     const audioBlob = await response.blob();
-    log('Audio blob created:', audioBlob);
-    
+    log("Audio blob created:", audioBlob);
+
     const url = URL.createObjectURL(audioBlob);
-    log('Audio URL created:', url);
-    
+    log("Audio URL created:", url);
+
     return url;
   } catch (error) {
-    console.error('Error generating audio:', error);
-    ErrorHandler.handle(error, 'Generating audio');
-    
+    console.error("Error generating audio:", error);
+    ErrorHandler.handle(error, "Generating audio");
+
     // Attempt to use default voice if custom voice fails
-    if (agentId !== 'default') {
-      log('Attempting to use default voice...');
-      return generateAudio(text, 'default');
+    if (agentId !== "default") {
+      log("Attempting to use default voice...");
+      return generateAudio(text, "default");
     }
-    
+
     throw error;
   }
 };
 
 function getSystemMessage(aiContext, username) {
   const baseMessage = `You are an AI assistant. Keep your responses concise, ideally one short paragraph. Address the user as ${username}. `;
-  
+
   switch (aiContext) {
-    case 'doctor-tom':
-      return baseMessage + "You are Doctor Tom, a medical assistant. Provide helpful medical advice and information. Always remind the user to consult with a real doctor for serious concerns.";
-    case 'walter-weather':
-      return baseMessage + "You are Walter Weather, a weather specialist. Provide weather forecasts, climate information, and interesting weather facts. Remind users that for critical weather situations, they should consult official weather services.";
-    case 'dave-entertainer':
-      return baseMessage + "You are Dave the Entertainer, an entertainment expert. Share fun facts, jokes, movie recommendations, and general entertainment knowledge. Keep the conversation light and enjoyable.";
+    case "doctor-tom":
+      return (
+        baseMessage +
+        "You are Doctor Tom, a medical assistant. Provide helpful medical advice and information. Always remind the user to consult with a real doctor for serious concerns."
+      );
+    case "walter-weather":
+      return (
+        baseMessage +
+        "You are Walter Weather, a weather specialist. Provide weather forecasts, climate information, and interesting weather facts. Remind users that for critical weather situations, they should consult official weather services."
+      );
+    case "dave-entertainer":
+      return (
+        baseMessage +
+        "You are Dave the Entertainer, an entertainment expert. Share fun facts, jokes, movie recommendations, and general entertainment knowledge. Keep the conversation light and enjoyable."
+      );
+    case "medication_reminders":
+      return (
+        baseMessage +
+        "You are MedRemind, a medication reminder assistant. Help users set reminders for their medications and provide information about proper medication usage. Always remind users to consult with their healthcare provider for medical advice."
+      );
     default:
       return baseMessage + "Provide helpful and friendly assistance.";
   }
 }
 
 export const getJSONResponse = async (message, aiContext, username) => {
-  log(`getJSONResponse called with message: ${message}, aiContext: ${aiContext}, username: ${username}`);
-  
-  const systemMessage = getSystemMessage(aiContext, username) + " Always respond in valid JSON format.";
-  
+  log(
+    `getJSONResponse called with message: ${message}, aiContext: ${aiContext}, username: ${username}`
+  );
+
+  const systemMessage =
+    getSystemMessage(aiContext, username) +
+    " Always respond in valid JSON format.";
+
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-4-turbo-preview",
       messages: [
         { role: "system", content: systemMessage },
-        { role: "user", content: message }
+        { role: "user", content: message },
       ],
       response_format: { type: "json_object" },
     });
@@ -166,29 +195,36 @@ export const getJSONResponse = async (message, aiContext, username) => {
     return JSON.parse(response.choices[0].message.content);
   } catch (error) {
     console.error("Error getting JSON response:", error);
-    ErrorHandler.handle(error, 'Getting JSON response');
+    ErrorHandler.handle(error, "Getting JSON response");
     throw error;
   }
 };
 
-export const getStreamingResponse = async (message, aiContext, username, onUpdate) => {
-  log(`getStreamingResponse called with message: ${message}, aiContext: ${aiContext}, username: ${username}`);
-  
+export const getStreamingResponse = async (
+  message,
+  aiContext,
+  username,
+  onUpdate
+) => {
+  log(
+    `getStreamingResponse called with message: ${message}, aiContext: ${aiContext}, username: ${username}`
+  );
+
   const systemMessage = getSystemMessage(aiContext, username);
-  
+
   try {
     const stream = await openai.chat.completions.create({
       model: "gpt-4-turbo-preview",
       messages: [
         { role: "system", content: systemMessage },
-        { role: "user", content: message }
+        { role: "user", content: message },
       ],
       stream: true,
     });
 
-    let fullResponse = '';
+    let fullResponse = "";
     for await (const chunk of stream) {
-      const content = chunk.choices[0]?.delta?.content || '';
+      const content = chunk.choices[0]?.delta?.content || "";
       fullResponse += content;
       onUpdate(content); // Call the update function with each chunk
     }
@@ -197,7 +233,7 @@ export const getStreamingResponse = async (message, aiContext, username, onUpdat
     return fullResponse;
   } catch (error) {
     console.error("Error in streaming response:", error);
-    ErrorHandler.handle(error, 'Getting streaming response');
+    ErrorHandler.handle(error, "Getting streaming response");
     throw error;
   }
 };

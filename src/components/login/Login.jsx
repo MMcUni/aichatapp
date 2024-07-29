@@ -9,6 +9,7 @@ import { auth, db } from "../../services/firebase";
 import { doc, setDoc, collection, query, where, getDocs } from "firebase/firestore";
 import upload from "../../utils/upload";
 import ErrorHandler from "../../utils/errorHandler";
+import { getFirestore, enableNetwork } from "firebase/firestore";
 
 const Login = () => {
   const [avatar, setAvatar] = useState({
@@ -48,19 +49,23 @@ const Login = () => {
     let user = null;
   
     try {
+      // Enable Firestore network connection
+      await enableNetwork(db);
+
+      // Create user with Firebase Authentication first
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      user = userCredential.user;
+
       // Check if username already exists
       const usersRef = collection(db, "users");
       const q = query(usersRef, where("username", "==", username));
       const querySnapshot = await getDocs(q);
       if (!querySnapshot.empty) {
+        await user.delete(); // Delete the auth user if username exists
         toast.warn("Username is already taken. Please choose another.");
         setLoading(false);
         return;
       }
-  
-      // Create user with Firebase Authentication
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      user = userCredential.user;
   
       // Upload avatar
       let imgUrl = await upload(avatar.file);

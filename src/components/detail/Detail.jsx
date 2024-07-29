@@ -1,18 +1,26 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { arrayRemove, arrayUnion, doc, updateDoc, onSnapshot } from "firebase/firestore";
+import React, { useEffect, useState, useRef, useCallback } from "react";
+import {
+  arrayRemove,
+  arrayUnion,
+  doc,
+  updateDoc,
+  onSnapshot,
+} from "firebase/firestore";
 import { useChatStore } from "../../store/chatStore";
 import { db } from "../../services/firebase";
 import { useUserStore } from "../../store/userStore";
 import { useAuthStore } from "../../store/authStore";
 import "./detail.css";
-import { log, error, warn, info } from '../../utils/logger';
+import { log, error, warn, info } from "../../utils/logger";
 
 const Detail = ({ handleLogout }) => {
-  const { chatId, user, isCurrentUserBlocked, isReceiverBlocked, changeBlock } = useChatStore();
+  const { chatId, user, isCurrentUserBlocked, isReceiverBlocked, changeBlock } =
+    useChatStore();
   const { currentUser } = useUserStore();
   const { isAuthenticated } = useAuthStore();
   const [userDetails, setUserDetails] = useState(null);
   const unsubscribeRef = useRef(null);
+
 
   const cleanupListeners = useCallback(() => {
     log("Cleaning up listeners in Detail");
@@ -34,14 +42,18 @@ const Detail = ({ handleLogout }) => {
     if (user && currentUser && isAuthenticated) {
       log("Setting up new listener");
       const userDocRef = doc(db, "users", user.id);
-      unsubscribeRef.current = onSnapshot(userDocRef, (doc) => {
-        if (isAuthenticated && doc.exists()) {
-          log("Received user details update");
-          setUserDetails(doc.data());
+      unsubscribeRef.current = onSnapshot(
+        userDocRef,
+        (doc) => {
+          if (isAuthenticated && doc.exists()) {
+            log("Received user details update");
+            setUserDetails(doc.data());
+          }
+        },
+        (error) => {
+          console.error("Error fetching user details:", error);
         }
-      }, (error) => {
-        console.error("Error fetching user details:", error);
-      });
+      );
     }
 
     return cleanupListeners;
