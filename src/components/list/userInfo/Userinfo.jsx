@@ -1,9 +1,13 @@
-import "./userInfo.css"
+import React from "react";
+import "./userInfo.css";
 import { useUserStore } from "../../../store/userStore";
 
 const Userinfo = () => {
-
   const { currentUser } = useUserStore();
+
+  if (!currentUser) {
+    return <div className="userInfo">Loading user information...</div>;
+  }
 
   return (
     <div className='userInfo'>
@@ -17,7 +21,7 @@ const Userinfo = () => {
         <img src="./edit.png" alt="" />
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Userinfo
+export default Userinfo;

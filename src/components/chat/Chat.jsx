@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useMemo, useCallback } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import "./chat.css";
 import EmojiPicker from "emoji-picker-react";
 import { doc, onSnapshot, updateDoc, arrayUnion } from "firebase/firestore";
@@ -12,7 +12,10 @@ import ErrorHandler from "../../utils/errorHandler";
 import { toast } from "react-toastify";
 import { getAIResponse, generateAudio } from "../../services/api";
 import { log, error } from "../../utils/logger";
-import { parseReminderInput, formatReminderResponse } from "../../utils/reminderParser";
+import {
+  parseReminderInput,
+  formatReminderResponse,
+} from "../../utils/reminderParser";
 import { useReminderStore } from "../../store/reminderStore";
 
 const Chat = () => {
@@ -22,25 +25,26 @@ const Chat = () => {
   const [open, setOpen] = useState(false);
 
   const { currentUser } = useUserStore();
-  const { chatId, user, isCurrentUserBlocked, isReceiverBlocked } = useChatStore();
+  const { chatId, user, isCurrentUserBlocked, isReceiverBlocked } =
+    useChatStore();
   const { addReminder } = useReminderStore();
 
   const endRef = useRef(null);
   const chatContainerRef = useRef(null);
   const prevMessagesLengthRef = useRef(0);
 
-  const scrollToBottom = useCallback(() => {
+  const scrollToBottom = () => {
     if (endRef.current) {
       setTimeout(() => {
         endRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
       }, 100);
     }
-  }, []);
+  };
 
   useEffect(() => {
     log("Chat component mounted. ChatId:", chatId);
     if (!chatId) return;
-    
+
     log("Setting up chat listener for:", chatId);
     const unSub = onSnapshot(
       doc(db, "chats", chatId),
@@ -66,13 +70,13 @@ const Chat = () => {
       log("Cleaning up chat listener");
       unSub();
     };
-  }, [chatId, scrollToBottom]);
+  }, [chatId]);
 
   useEffect(() => {
     scrollToBottom();
-  }, [chatId, scrollToBottom]);
+  }, [chatId]);
 
-  const handleSend = useCallback(async () => {
+  const handleSend = async () => {
     if (text.trim() === "" && !img.file) return;
 
     let imgUrl = null;
@@ -103,13 +107,13 @@ const Chat = () => {
 
       if (user?.isAI) {
         log("Generating AI response for:", user);
-        
+
         let aiResponse;
         if (user.specialization === "medication_reminders") {
           log("Parsing reminder input:", text);
           const parsedReminder = parseReminderInput(text);
           log("Parsed reminder:", parsedReminder);
-          
+
           if (parsedReminder.medication && parsedReminder.time) {
             log("Adding reminder for user:", currentUser.id);
             try {
@@ -118,18 +122,24 @@ const Chat = () => {
               aiResponse = formatReminderResponse(parsedReminder);
             } catch (reminderError) {
               error("Error adding reminder:", reminderError);
-              aiResponse = "I'm sorry, there was an error setting your reminder. Please try again.";
+              aiResponse =
+                "I'm sorry, there was an error setting your reminder. Please try again.";
             }
           } else {
             log("Incomplete reminder information");
-            aiResponse = "I'm sorry, I couldn't understand your reminder request. Please try again with a medication name and time.";
+            aiResponse =
+              "I'm sorry, I couldn't understand your reminder request. Please try again with a medication name and time.";
           }
         } else {
-          aiResponse = await getAIResponse(text, user.specialization, currentUser.username);
+          aiResponse = await getAIResponse(
+            text,
+            user.specialization,
+            currentUser.username
+          );
         }
-        
+
         log("AI response received:", aiResponse);
-        
+
         if (aiResponse) {
           log("Attempting to generate audio for response:", aiResponse);
           const audioUrl = await generateAudio(aiResponse, user.id);
@@ -157,9 +167,16 @@ const Chat = () => {
     } catch (err) {
       ErrorHandler.handle(err, "Sending message or getting AI response");
     }
-  }, [text, img, currentUser.id, chatId, user, getAIResponse, generateAudio, addReminder]);
+  };
 
-  const handleImg = useCallback((e) => {
+  const handleKeyPress = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault(); // Prevent default to avoid line break
+      handleSend();
+    }
+  };
+
+  const handleImg = (e) => {
     const file = e.target.files[0];
     if (file) {
       setImg({
@@ -167,16 +184,18 @@ const Chat = () => {
         url: URL.createObjectURL(file),
       });
     }
-  }, []);
+  };
 
-  const handleEmoji = useCallback((emojiObject) => {
+  const handleEmoji = (emojiObject) => {
     setText((prev) => prev + emojiObject.emoji);
-  }, []);
+  };
 
-  const renderMessage = useCallback((message) => {
+  const renderMessage = (message) => {
     const isOwn = message.senderId === currentUser.id;
-    const uniqueKey = `${message.id || message.createdAt}-${Math.random().toString(36).substr(2, 9)}`;
-    
+    const uniqueKey = `${message.id || message.createdAt}-${Math.random()
+      .toString(36)
+      .substr(2, 9)}`;
+
     return (
       <div className={`message ${isOwn ? "own" : ""}`} key={uniqueKey}>
         <div className="texts">
@@ -212,9 +231,12 @@ const Chat = () => {
         </div>
       </div>
     );
-  }, [currentUser.id]);
+  };
 
-  const memoizedMessages = useMemo(() => messages.map(renderMessage), [messages, renderMessage]);
+  const memoizedMessages = useMemo(
+    () => messages.map(renderMessage),
+    [messages, currentUser.id]
+  );
 
   return (
     <div className="chat">
@@ -223,7 +245,9 @@ const Chat = () => {
           <img src={user?.avatar || "./avatar.png"} alt="" />
           <div className="texts">
             <span>{user?.username}</span>
-            <p>{user?.isAI ? `AI ${user.specialization} Assistant` : "Online"}</p>
+            <p>
+              {user?.isAI ? `AI ${user.specialization} Assistant` : "Online"}
+            </p>
           </div>
         </div>
       </div>
@@ -249,10 +273,11 @@ const Chat = () => {
           placeholder={
             isCurrentUserBlocked || isReceiverBlocked
               ? "You cannot send a message"
-              : `Ask ${user?.username || 'AI Assistant'} a question...`
+              : `Ask ${user?.username || "AI Assistant"} a question...`
           }
           value={text}
           onChange={(e) => setText(e.target.value)}
+          onKeyPress={handleKeyPress}
           disabled={isCurrentUserBlocked || isReceiverBlocked}
         />
         <div className="emoji">

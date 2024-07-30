@@ -10,6 +10,8 @@ import { doc, setDoc, collection, query, where, getDocs } from "firebase/firesto
 import upload from "../../utils/upload";
 import ErrorHandler from "../../utils/errorHandler";
 import { getFirestore, enableNetwork } from "firebase/firestore";
+import { useAuthStore } from "../../store/authStore";
+import { useUserStore } from "../../store/userStore";
 
 const Login = () => {
   const [avatar, setAvatar] = useState({
@@ -18,6 +20,8 @@ const Login = () => {
   });
 
   const [loading, setLoading] = useState(false);
+  const { setIsAuthenticated } = useAuthStore();
+  const { fetchUserInfo } = useUserStore();
 
   const handleAvatar = (e) => {
     if (e.target.files[0]) {
@@ -114,12 +118,23 @@ const Login = () => {
     }
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      // Enable Firestore network connection
+      await enableNetwork(db);
+
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      
+      // Fetch user info
+      await fetchUserInfo(user.uid);
+      
       toast.success("Logged in successfully!");
+      
+      // Set authenticated state after a short delay
+      setTimeout(() => {
+        setIsAuthenticated(true);
+      }, 500);
     } catch (err) {
-      // Let ErrorHandler handle the error message
       ErrorHandler.handle(err, 'User login');
-      // Remove the additional toast.error call
     } finally {
       setLoading(false);
     }

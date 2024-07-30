@@ -11,7 +11,7 @@ import { db } from "../../services/firebase";
 import { useUserStore } from "../../store/userStore";
 import { useAuthStore } from "../../store/authStore";
 import "./detail.css";
-import { log, error, warn, info } from "../../utils/logger";
+import { log } from "../../utils/logger";
 
 const Detail = ({ handleLogout }) => {
   const { chatId, user, isCurrentUserBlocked, isReceiverBlocked, changeBlock } =
@@ -20,7 +20,6 @@ const Detail = ({ handleLogout }) => {
   const { isAuthenticated } = useAuthStore();
   const [userDetails, setUserDetails] = useState(null);
   const unsubscribeRef = useRef(null);
-
 
   const cleanupListeners = useCallback(() => {
     log("Cleaning up listeners in Detail");
