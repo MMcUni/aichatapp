@@ -12,6 +12,7 @@ import { useUserStore } from "../../store/userStore";
 import { useAuthStore } from "../../store/authStore";
 import "./detail.css";
 import { log } from "../../utils/logger";
+import AI_AGENT_TAGLINES from "../constants/aiAgentTaglines";
 
 const Detail = ({ handleLogout }) => {
   const { chatId, user, isCurrentUserBlocked, isReceiverBlocked, changeBlock } =
@@ -73,93 +74,68 @@ const Detail = ({ handleLogout }) => {
     }
   };
 
+  const renderPhotoItem = (photoUrl, photoName) => (
+    <div className="photoItem" key={photoName}>
+      <div className="photoDetail">
+        <img src={photoUrl} alt={photoName} />
+        <span>{photoName}</span>
+      </div>
+      <img src="./download.png" alt="Download" className="icon" />
+    </div>
+  );
+
   return (
     <div className="detail">
       <div className="user">
-        <img src={user?.avatar || "./avatar.png"} alt="" />
+        <img
+          src={user?.avatar || "./avatar.png"}
+          alt={user?.username || "User avatar"}
+        />
         <h2>{user?.username}</h2>
-        <p>Lorem ipsum dolor sit amet.</p>
+        <p>{user?.isAI ? AI_AGENT_TAGLINES[user.id] : "User bio goes here"}</p>
       </div>
       <div className="info">
         <div className="option">
           <div className="title">
             <span>Chat Settings</span>
-            <img src="./arrowUp.png" alt="" />
+            <img src="./arrowUp.png" alt="Expand" />
           </div>
         </div>
         <div className="option">
           <div className="title">
-            <span>Chat Settings</span>
-            <img src="./arrowUp.png" alt="" />
+            <span>Privacy & Help</span>
+            <img src="./arrowUp.png" alt="Expand" />
           </div>
         </div>
         <div className="option">
           <div className="title">
-            <span>Privacy & help</span>
-            <img src="./arrowUp.png" alt="" />
-          </div>
-        </div>
-        <div className="option">
-          <div className="title">
-            <span>Shared photos</span>
-            <img src="./arrowDown.png" alt="" />
+            <span>Shared Photos</span>
+            <img src="./arrowDown.png" alt="Collapse" />
           </div>
           <div className="photos">
-            <div className="photoItem">
-              <div className="photoDetail">
-                <img
-                  src="https://images.pexels.com/photos/7381200/pexels-photo-7381200.jpeg?auto=compress&cs=tinysrgb&w=800&lazy=load"
-                  alt=""
-                />
-                <span>photo_2024_2.png</span>
-              </div>
-              <img src="./download.png" alt="" className="icon" />
-            </div>
-            <div className="photoItem">
-              <div className="photoDetail">
-                <img
-                  src="https://images.pexels.com/photos/7381200/pexels-photo-7381200.jpeg?auto=compress&cs=tinysrgb&w=800&lazy=load"
-                  alt=""
-                />
-                <span>photo_2024_2.png</span>
-              </div>
-              <img src="./download.png" alt="" className="icon" />
-            </div>
-            <div className="photoItem">
-              <div className="photoDetail">
-                <img
-                  src="https://images.pexels.com/photos/7381200/pexels-photo-7381200.jpeg?auto=compress&cs=tinysrgb&w=800&lazy=load"
-                  alt=""
-                />
-                <span>photo_2024_2.png</span>
-              </div>
-              <img src="./download.png" alt="" className="icon" />
-            </div>
-            <div className="photoItem">
-              <div className="photoDetail">
-                <img
-                  src="https://images.pexels.com/photos/7381200/pexels-photo-7381200.jpeg?auto=compress&cs=tinysrgb&w=800&lazy=load"
-                  alt=""
-                />
-                <span>photo_2024_2.png</span>
-              </div>
-              <img src="./download.png" alt="" className="icon" />
-            </div>
+            {[1, 2, 3, 4].map((index) =>
+              renderPhotoItem(
+                "https://images.pexels.com/photos/7381200/pexels-photo-7381200.jpeg?auto=compress&cs=tinysrgb&w=800&lazy=load",
+                `photo_2024_${index}.png`
+              )
+            )}
           </div>
         </div>
         <div className="option">
           <div className="title">
             <span>Shared Files</span>
-            <img src="./arrowUp.png" alt="" />
+            <img src="./arrowUp.png" alt="Expand" />
           </div>
         </div>
-        <button onClick={handleBlock}>
-          {isCurrentUserBlocked
-            ? "You are Blocked!"
-            : isReceiverBlocked
-            ? "User blocked"
-            : "Block User"}
-        </button>
+        {!user?.isAI && (
+          <button onClick={handleBlock}>
+            {isCurrentUserBlocked
+              ? "You are Blocked!"
+              : isReceiverBlocked
+              ? "Unblock User"
+              : "Block User"}
+          </button>
+        )}
         <button className="logout" onClick={handleLogout}>
           Logout
         </button>
