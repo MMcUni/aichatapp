@@ -11,7 +11,7 @@ export const AI_AGENTS = {
     username: "Walter Weather",
     avatar: "./ai-weather.png",
     isAI: true,
-    specialization: "weather",
+    specialization: "weather_forecasting",
   },
   "dave-entertainer": {
     id: "dave-entertainer",
@@ -26,5 +26,12 @@ export const AI_AGENTS = {
     avatar: "./ai-med-reminder.png",
     isAI: true,
     specialization: "medication_reminders",
+  },
+  "news-summarizer": {
+    id: "news-summarizer",
+    username: "NewsBot",
+    avatar: "./ai-news.png",
+    isAI: true,
+    specialization: "news_summarization",
   },
 };

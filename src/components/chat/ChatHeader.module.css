@@ -1,0 +1,50 @@
+.top {
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #dddddd35;
+  }
+  
+  .user {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  
+  .user img {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+  
+  .texts {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  
+  .texts span {
+    font-size: 18px;
+    font-weight: bold;
+  }
+  
+  .texts p {
+    font-size: 14px;
+    font-weight: 300;
+    color: #a5a5a5;
+  }
+  
+  .enableAudioButton {
+    padding: 5px 10px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+  .enableAudioButton:hover {
+    background-color: #45a049;
+  }

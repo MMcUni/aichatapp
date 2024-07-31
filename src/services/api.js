@@ -2,6 +2,7 @@ import OpenAI from "openai";
 import ErrorHandler from "../utils/errorHandler";
 import { AI_AGENTS } from "../components/constants/aiAgents";
 import { log, error, warn, info } from "../utils/logger";
+import { fetchTopNews } from "./newsService";
 
 const API_URL = "https://api.deepgram.com/v1/listen";
 const ELEVENLABS_API_URL = "https://api.elevenlabs.io/v1/text-to-speech";
@@ -227,5 +228,52 @@ export const getStreamingResponse = async (
     console.error("Error in streaming response:", error);
     ErrorHandler.handle(error, "Getting streaming response");
     throw error;
+  }
+};
+
+export const summarizeText = async (text) => {
+  log("Summarizing text:", text.substring(0, 50) + "...");
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        {
+          role: "system",
+          content: "You are a helpful assistant that summarizes text.",
+        },
+        {
+          role: "user",
+          content: `Please summarize the following text in one sentence:\n\n${text}`,
+        },
+      ],
+      max_tokens: 60,
+    });
+
+    log("Text summarized successfully");
+    return response.choices[0].message.content;
+  } catch (err) {
+    error("Error summarizing text:", err);
+    throw err;
+  }
+};
+
+export const getNewsSummary = async () => {
+  log("Getting news summary");
+  try {
+    const articles = await fetchTopNews();
+    log(`Fetched ${articles.length} top news articles`);
+
+    const summaries = await Promise.all(
+      articles.map(async (article) => {
+        const fullText = `${article.title}. ${article.description}`;
+        return await summarizeText(fullText);
+      })
+    );
+
+    log("All articles summarized successfully");
+    return summaries.join("\n\n");
+  } catch (err) {
+    error("Error getting news summary:", err);
+    throw err;
   }
 };
