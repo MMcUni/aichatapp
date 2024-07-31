@@ -23,6 +23,9 @@ const Chat = () => {
   const [text, setText] = useState("");
   const [img, setImg] = useState({ file: null, url: "" });
   const [open, setOpen] = useState(false);
+  const [currentlyPlayingAudio, setCurrentlyPlayingAudio] = useState(null);
+  const [isAudioEnabled, setIsAudioEnabled] = useState(false);
+  const [playingMessageId, setPlayingMessageId] = useState(null);
 
   const { currentUser } = useUserStore();
   const { chatId, user, isCurrentUserBlocked, isReceiverBlocked } =
@@ -33,12 +36,10 @@ const Chat = () => {
   const chatContainerRef = useRef(null);
   const prevMessagesLengthRef = useRef(0);
 
-  const scrollToBottom = () => {
-    if (endRef.current) {
-      setTimeout(() => {
-        endRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
-      }, 100);
-    }
+  const enableAudio = () => {
+    setIsAudioEnabled(true);
+    console.log("Audio playback enabled");
+    toast.success("Audio playback enabled!");
   };
 
   useEffect(() => {
@@ -73,8 +74,77 @@ const Chat = () => {
   }, [chatId]);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [chatId]);
+    console.log("Messages updated, current count:", messages.length);
+    if (messages.length > prevMessagesLengthRef.current) {
+      const latestMessage = messages[messages.length - 1];
+      console.log("Latest message:", latestMessage);
+      if (latestMessage.senderId !== currentUser.id && latestMessage.audioUrl) {
+        console.log("Attempting to play audio for new AI message");
+        playAudioFromUrl(latestMessage.id, latestMessage.audioUrl);
+      }
+      scrollToBottom();
+    }
+    prevMessagesLengthRef.current = messages.length;
+  }, [messages, currentUser.id]);
+
+  const scrollToBottom = () => {
+    if (endRef.current) {
+      setTimeout(() => {
+        endRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
+      }, 100);
+    }
+  };
+
+  const playAudioFromUrl = (messageId, url) => {
+    console.log(`Attempting to play audio for message ${messageId}`);
+    if (!isAudioEnabled) {
+      console.log("Audio not enabled, enabling now");
+      enableAudio();
+    }
+
+    if (currentlyPlayingAudio) {
+      console.log("Stopping currently playing audio");
+      currentlyPlayingAudio.pause();
+    }
+
+    const audio = new Audio(url);
+    audio.oncanplaythrough = () => {
+      console.log("Audio can play through, attempting to play");
+      audio
+        .play()
+        .then(() => {
+          console.log("Audio playback started successfully");
+          setPlayingMessageId(messageId);
+          setCurrentlyPlayingAudio(audio);
+        })
+        .catch((e) => {
+          console.error("Error playing audio:", e);
+          toast.error("Failed to play audio. Please try again.");
+        });
+    };
+    audio.onended = () => {
+      console.log("Audio playback ended");
+      setPlayingMessageId(null);
+      setCurrentlyPlayingAudio(null);
+    };
+    audio.onerror = (e) => console.error("Error loading audio:", e);
+  };
+
+  const toggleAudio = (messageId, audioUrl) => {
+    console.log(`Toggling audio for message ${messageId}`);
+    if (playingMessageId === messageId && currentlyPlayingAudio) {
+      if (currentlyPlayingAudio.paused) {
+        console.log("Resuming paused audio");
+        currentlyPlayingAudio.play();
+      } else {
+        console.log("Pausing playing audio");
+        currentlyPlayingAudio.pause();
+      }
+    } else {
+      console.log("Playing new audio");
+      playAudioFromUrl(messageId, audioUrl);
+    }
+  };
 
   const handleSend = async () => {
     if (text.trim() === "" && !img.file) return;
@@ -106,19 +176,12 @@ const Chat = () => {
       setImg({ file: null, url: "" });
 
       if (user?.isAI) {
-        log("Generating AI response for:", user);
-
         let aiResponse;
         if (user.specialization === "medication_reminders") {
-          log("Parsing reminder input:", text);
           const parsedReminder = parseReminderInput(text);
-          log("Parsed reminder:", parsedReminder);
-
           if (parsedReminder.medication && parsedReminder.time) {
-            log("Adding reminder for user:", currentUser.id);
             try {
               await addReminder(currentUser.id, parsedReminder);
-              log("Reminder added successfully");
               aiResponse = formatReminderResponse(parsedReminder);
             } catch (reminderError) {
               error("Error adding reminder:", reminderError);
@@ -126,7 +189,6 @@ const Chat = () => {
                 "I'm sorry, there was an error setting your reminder. Please try again.";
             }
           } else {
-            log("Incomplete reminder information");
             aiResponse =
               "I'm sorry, I couldn't understand your reminder request. Please try again with a medication name and time.";
           }
@@ -138,13 +200,8 @@ const Chat = () => {
           );
         }
 
-        log("AI response received:", aiResponse);
-
         if (aiResponse) {
-          log("Attempting to generate audio for response:", aiResponse);
           const audioUrl = await generateAudio(aiResponse, user.id);
-          log("Audio URL received:", audioUrl);
-
           const aiMessage = {
             id: (Date.now() + 1).toString(),
             senderId: user.id,
@@ -157,8 +214,6 @@ const Chat = () => {
           await updateDoc(doc(db, "chats", chatId), {
             messages: arrayUnion(aiMessage),
           });
-
-          log("AI response added to chat:", aiMessage);
         } else {
           error("No AI response received");
           toast.error("Failed to get AI response. Please try again.");
@@ -171,7 +226,7 @@ const Chat = () => {
 
   const handleKeyPress = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault(); // Prevent default to avoid line break
+      e.preventDefault();
       handleSend();
     }
   };
@@ -197,25 +252,18 @@ const Chat = () => {
       .substr(2, 9)}`;
 
     return (
-      <div className={`message ${isOwn ? "own" : ""}`} key={uniqueKey}>
+      <div
+        className={`message ${isOwn ? "own" : ""} ${
+          message.type === "voice" ? "voice-message" : ""
+        }`}
+        key={uniqueKey}
+        onClick={() =>
+          message.type === "voice" && toggleAudio(message.id, message.audioUrl)
+        }
+      >
         <div className="texts">
-          {message.type === "voice" ? (
-            <>
-              {message.audioUrl ? (
-                <audio
-                  src={message.audioUrl}
-                  controls
-                  onError={(e) => {
-                    log("Error loading audio, removing element");
-                    e.target.parentNode.removeChild(e.target);
-                  }}
-                />
-              ) : (
-                <p>Audio unavailable</p>
-              )}
-              <p>{message.text}</p>
-            </>
-          ) : message.img ? (
+          <p>{message.text}</p>
+          {message.img && (
             <img
               src={message.img}
               alt=""
@@ -224,18 +272,26 @@ const Chat = () => {
                 e.target.parentNode.removeChild(e.target);
               }}
             />
-          ) : (
-            <p>{message.text}</p>
           )}
           <span>{format(message.createdAt)}</span>
         </div>
+        <div
+          className={`message ${isOwn ? "own" : ""} ${
+            message.type === "voice" ? "voice-message" : ""
+          } ${playingMessageId === message.id ? "playing" : ""}`}
+          key={uniqueKey}
+          onClick={() =>
+            message.type === "voice" &&
+            toggleAudio(message.id, message.audioUrl)
+          }
+        ></div>
       </div>
     );
   };
 
   const memoizedMessages = useMemo(
     () => messages.map(renderMessage),
-    [messages, currentUser.id]
+    [messages, currentUser.id, playingMessageId]
   );
 
   return (
@@ -250,6 +306,11 @@ const Chat = () => {
             </p>
           </div>
         </div>
+        {!isAudioEnabled && (
+          <button onClick={enableAudio} className="enable-audio-button">
+            Enable Audio
+          </button>
+        )}
       </div>
       <div className="center" ref={chatContainerRef}>
         {memoizedMessages}

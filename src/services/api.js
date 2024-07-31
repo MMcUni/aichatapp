@@ -79,21 +79,47 @@ export const getAIResponse = async (message, aiContext, username) => {
   }
 };
 
+function getSystemMessage(aiContext, username) {
+  const agent = Object.values(AI_AGENTS).find(
+    (agent) => agent.specialization === aiContext
+  );
+  if (!agent) {
+    throw new Error(`No AI agent found for specialization: ${aiContext}`);
+  }
+
+  const baseMessage = `You are an AI assistant named ${agent.username}. Keep your responses concise, ideally one short paragraph. Address the user as ${username}. `;
+
+  switch (aiContext) {
+    case "medical":
+      return (
+        baseMessage +
+        "You are Doctor Tom, a medical assistant. Provide helpful medical advice and information based on general knowledge. For minor issues, offer practical suggestions and home remedies. Only recommend seeking professional medical help for potentially serious or persistent problems. Use your judgment to determine when professional care is necessary. Always maintain a caring and supportive tone."
+      );
+    case "weather":
+      return (
+        baseMessage +
+        "You are Walter Weather, a weather specialist. Provide weather forecasts, climate information, and interesting weather facts. Remind users that for critical weather situations, they should consult official weather services."
+      );
+    case "entertainment":
+      return (
+        baseMessage +
+        "You are Dave the Entertainer, an entertainment expert. Share fun facts, jokes, movie recommendations, and general entertainment knowledge. Keep the conversation light and enjoyable."
+      );
+    case "medication_reminders":
+      return (
+        baseMessage +
+        "You are MedRemind, a medication reminder assistant. Help users set reminders for their medications and provide information about proper medication usage. Always remind users to consult with their healthcare provider for medical advice."
+      );
+    default:
+      return baseMessage + "Provide helpful and friendly assistance.";
+  }
+}
+
 export const generateAudio = async (text, agentId) => {
   try {
     log("Generating audio for agent ID:", agentId);
-    log("Available voice IDs:", VOICE_IDS);
-    log("Selected voice ID:", VOICE_IDS[agentId] || VOICE_IDS.default);
-    log("generateAudio called with agentId:", agentId);
-    log("VOICE_IDS:", VOICE_IDS);
-
     const voiceId = VOICE_IDS[agentId] || VOICE_IDS.default;
-
     const apiUrl = `${ELEVENLABS_API_URL}/${voiceId}`;
-    log("ElevenLabs API URL:", apiUrl);
-    log("ElevenLabs API Key:", import.meta.env.VITE_ELEVENLABS_API_KEY);
-    log(`Voice ID selected: ${voiceId}`);
-    log(`Text to be converted to speech: ${text}`); // Add this log
 
     if (!text) {
       throw new Error("No text provided for audio generation");
@@ -114,8 +140,6 @@ export const generateAudio = async (text, agentId) => {
       }),
     });
 
-    log("ElevenLabs API response status:", response.status);
-
     if (!response.ok) {
       const errorText = await response.text();
       console.error("ElevenLabs API error:", errorText);
@@ -123,10 +147,7 @@ export const generateAudio = async (text, agentId) => {
     }
 
     const audioBlob = await response.blob();
-    log("Audio blob created:", audioBlob);
-
     const url = URL.createObjectURL(audioBlob);
-    log("Audio URL created:", url);
 
     return url;
   } catch (error) {
@@ -142,35 +163,6 @@ export const generateAudio = async (text, agentId) => {
     throw error;
   }
 };
-
-function getSystemMessage(aiContext, username) {
-  const baseMessage = `You are an AI assistant. Keep your responses concise, ideally one short paragraph. Address the user as ${username}. `;
-
-  switch (aiContext) {
-    case "doctor-tom":
-      return (
-        baseMessage +
-        "You are Doctor Tom, a medical assistant. Provide helpful medical advice and information. Always remind the user to consult with a real doctor for serious concerns."
-      );
-    case "walter-weather":
-      return (
-        baseMessage +
-        "You are Walter Weather, a weather specialist. Provide weather forecasts, climate information, and interesting weather facts. Remind users that for critical weather situations, they should consult official weather services."
-      );
-    case "dave-entertainer":
-      return (
-        baseMessage +
-        "You are Dave the Entertainer, an entertainment expert. Share fun facts, jokes, movie recommendations, and general entertainment knowledge. Keep the conversation light and enjoyable."
-      );
-    case "medication_reminders":
-      return (
-        baseMessage +
-        "You are MedRemind, a medication reminder assistant. Help users set reminders for their medications and provide information about proper medication usage. Always remind users to consult with their healthcare provider for medical advice."
-      );
-    default:
-      return baseMessage + "Provide helpful and friendly assistance.";
-  }
-}
 
 export const getJSONResponse = async (message, aiContext, username) => {
   log(

@@ -83,6 +83,7 @@
         border-radius: 50%;
         object-fit: cover;
       }
+
       .texts {
         flex: 1;
         display: flex;
@@ -200,10 +201,44 @@
   0% {
     transform: scale(1);
   }
+
   50% {
     transform: scale(1.1);
   }
+
   100% {
     transform: scale(1);
   }
+}
+
+.audio-indicator {
+  font-size: 0.8em;
+  color: #888;
+  margin-top: 5px;
+}
+
+.message {
+  cursor: pointer;
+}
+
+.play-button, .enable-audio-button {
+  padding: 5px 10px;
+  margin-left: 10px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.play-button:hover, .enable-audio-button:hover {
+  background-color: #45a049;
+}
+
+.voice-message {
+  cursor: pointer;
+}
+
+.voice-message.playing {
+  background-color: rgba(0, 0, 0, 0.05);
 }
