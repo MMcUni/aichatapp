@@ -47,20 +47,31 @@ export const transcribeAudio = async (audioBlob) => {
   }
 };
 
-export const getAIResponse = async (message, aiContext, username) => {
+export const getAIResponse = async (
+  message,
+  aiContext,
+  username,
+  chatHistory = []
+) => {
   log(
-    `getAIResponse called with message: ${message}, aiContext: ${aiContext}, username: ${username}`
+    `getAIResponse called with message: ${message}, aiContext: ${aiContext}, username: ${username}, chatHistory length: ${chatHistory.length}`
   );
 
   const systemMessage = getSystemMessage(aiContext, username);
 
   try {
+    const messages = [
+      { role: "system", content: systemMessage },
+      ...chatHistory.map((msg) => ({
+        role: msg.senderId === username ? "user" : "assistant",
+        content: msg.text,
+      })),
+      { role: "user", content: message },
+    ];
+
     const response = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
-      messages: [
-        { role: "system", content: systemMessage },
-        { role: "user", content: message },
-      ],
+      messages: messages,
       max_tokens: 150,
     });
 
@@ -110,6 +121,11 @@ function getSystemMessage(aiContext, username) {
       return (
         baseMessage +
         "You are MedRemind, a medication reminder assistant. Help users set reminders for their medications and provide information about proper medication usage. Always remind users to consult with their healthcare provider for medical advice."
+      );
+    case "companionship":
+      return (
+        baseMessage +
+        "You are CompanionAI, a friendly and empathetic AI companion. Your goal is to provide emotional support, engage in meaningful conversations, and build a rapport with the user. Remember previous interactions to ask relevant follow-up questions and maintain context. Be supportive, understanding, and always prioritize the user's well-being."
       );
     default:
       return baseMessage + "Provide helpful and friendly assistance.";

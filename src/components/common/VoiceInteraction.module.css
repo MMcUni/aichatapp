@@ -1,0 +1,40 @@
+.voiceButton {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .micIcon {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .recording {
+    animation: pulse 1s infinite;
+  }
+  
+  .recording .micIcon {
+    filter: invert(37%) sepia(78%) saturate(835%) hue-rotate(191deg) brightness(94%) contrast(96%);
+  }
+  
+  .processing {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  @keyframes pulse {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.1);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }

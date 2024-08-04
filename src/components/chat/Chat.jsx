@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import useChat from './useChat';
 import ChatHeader from './ChatHeader';
 import Message from './Message';
@@ -29,6 +29,14 @@ const Chat = () => {
     toggleAudio,
   } = useChat();
 
+  const handleSendWithHistory = async () => {
+    if (user?.specialization === 'companionship') {
+      await handleSend(messages);
+    } else {
+      await handleSend();
+    }
+  };
+
   return (
     <div className={styles.chat}>
       <ChatHeader 
@@ -54,8 +62,8 @@ const Chat = () => {
         setImg={setImg}
         open={open}
         setOpen={setOpen}
-        handleSend={handleSend}
-        handleKeyPress={handleKeyPress}
+        handleSend={handleSendWithHistory}
+        handleKeyPress={(e) => handleKeyPress(e, messages)}
         handleImg={handleImg}
         handleEmoji={handleEmoji}
         isBlocked={isCurrentUserBlocked || isReceiverBlocked}

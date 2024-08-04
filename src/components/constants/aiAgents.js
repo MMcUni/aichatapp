@@ -34,4 +34,11 @@ export const AI_AGENTS = {
     isAI: true,
     specialization: "news_summarization",
   },
+  "companion-ai": {
+    id: "companion-ai",
+    username: "CompanionAI",
+    avatar: "./ai-companion.png",
+    isAI: true,
+    specialization: "companionship",
+  },
 };

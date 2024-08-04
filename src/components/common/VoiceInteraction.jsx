@@ -6,12 +6,10 @@ import { toast } from 'react-toastify';
 import { doc, updateDoc, arrayUnion } from "firebase/firestore";
 import { db } from "../../services/firebase";
 import { log, error, warn, info } from '../../utils/logger';
+import styles from './VoiceInteraction.module.css';
 
 const VoiceInteraction = () => {
   const [isRecording, setIsRecording] = useState(false);
-  const [audioUrl, setAudioUrl] = useState(null);
-  const [transcription, setTranscription] = useState('');
-  const [response, setResponse] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const mediaRecorder = useRef(null);
   const audioChunks = useRef([]);
@@ -124,9 +122,9 @@ const VoiceInteraction = () => {
     <button 
       onClick={isRecording ? stopRecording : startRecording} 
       disabled={isProcessing}
-      className={`voice-button ${isRecording ? 'recording' : ''} ${isProcessing ? 'processing' : ''}`}
+      className={`${styles.voiceButton} ${isRecording ? styles.recording : ''} ${isProcessing ? styles.processing : ''}`}
     >
-      <img src="./mic.png" alt="Microphone" />
+      <img src="/mic.png" alt="Microphone" className={styles.micIcon} />
     </button>
   );
 };

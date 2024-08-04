@@ -20,8 +20,8 @@ const ChatInput = ({
   return (
     <div className={styles.bottom}>
       <div className={styles.icons}>
-        <label htmlFor="file">
-          <img src="./img.png" alt="Upload image" />
+        <label htmlFor="file" className={styles.iconWrapper}>
+          <img src="/img.png" alt="Upload image" className={styles.icon} />
         </label>
         <input
           type="file"
@@ -47,9 +47,10 @@ const ChatInput = ({
       />
       <div className={styles.emoji}>
         <img
-          src="./emoji.png"
+          src="/emoji.png"
           alt="Emoji"
           onClick={() => setOpen((prev) => !prev)}
+          className={styles.emojiIcon}
         />
         {open && (
           <div className={styles.picker}>

@@ -1,68 +1,136 @@
-# AI Chat App
-AI Chat App is a real-time messaging application built with React and Firebase. It allows users to create accounts, add contacts, and exchange messages in real-time.
+# AI Chat Application
+
+AI Chat Application is a sophisticated, real-time messaging platform built with React and Firebase. It integrates multiple AI agents, speech recognition, text-to-speech capabilities, news summarization, weather forecasting, and medication reminders.
 
 ## Features
-User authentication (sign up, login, logout)
-Real-time messaging
-User profile management
-Add and manage contacts
-Responsive design for desktop and mobile devices
+
+- User authentication (sign up, login, logout)
+- Real-time messaging with other users
+- Real-time messaging with AI agents
+- Voice interaction with speech-to-text and text-to-speech
+- AI-generated Weather forecasting
+- AI-generated News summarization
+- Medication reminders
+- Responsive design
 
 ## Technologies Used
-React.js
-Firebase (Authentication, Firestore, Storage)
-Vite
-Zustand for state management
-React-Toastify for notifications
-TimeAgo.js for timestamp formatting
+
+### Frontend
+- React.js
+- Vite (build tool and development server)
+- Zustand (state management)
+- CSS Modules (component-scoped styling)
+- React-Toastify (notifications)
+- TimeAgo.js (timestamp formatting)
+
+### Backend
+- Firebase (Authentication, Firestore, Storage)
+- Express.js (production server)
+
+### APIs
+- OpenAI GPT (AI agents)
+- Deepgram (Speech recognition and transcription)
+- ElevenLabs (Text-to-speech)
+- Open-Meteo (Weather data)
+- TheNewsAPI (News data)
 
 ## Prerequisites
-Before you begin, ensure you have met the following requirements:
 
-Node.js (v14.0.0 or later)
-npm (v6.0.0 or later)
-A Firebase account and project
+Before you begin, ensure you have met the following requirements:
+- Node.js (v14.0.0 or later)
+- npm (v6.0.0 or later)
+- A Firebase account and project
+- API keys for OpenAI, Deepgram, ElevenLabs, and TheNewsAPI
 
 ## Installation
-Clone the repository:
-Copygit clone https://github.com/MMcUni/ai-chat-app.git
-cd ai-chat-app
 
-### Install the dependencies:
-Copynpm install
+1. Clone the repository:
+   ```
+   git clone https://github.com/MMcUni/ai-chat-app.git
+   cd ai-chat-app
+   ```
 
-Create a .env file in the root directory and add your Firebase configuration:
-CopyVITE_API_KEY=your_api_key
-VITE_AUTH_DOMAIN=your_auth_domain
-VITE_PROJECT_ID=your_project_id
-VITE_STORAGE_BUCKET=your_storage_bucket
-VITE_MESSAGING_SENDER_ID=your_messaging_sender_id
-VITE_APP_ID=your_app_id
+2. Install the dependencies:
+   ```
+   npm install
+   ```
 
+3. Create a `.env` file in the root directory and add your configuration:
+   ```
+   VITE_API_KEY=your_firebase_api_key
+   VITE_AUTH_DOMAIN=your_firebase_auth_domain
+   VITE_PROJECT_ID=your_firebase_project_id
+   VITE_STORAGE_BUCKET=your_firebase_storage_bucket
+   VITE_MESSAGING_SENDER_ID=your_firebase_messaging_sender_id
+   VITE_APP_ID=your_firebase_app_id
+   VITE_OPENAI_API_KEY=your_openai_api_key
+   VITE_DEEPGRAM_API_KEY=your_deepgram_api_key
+   VITE_ELEVENLABS_API_KEY=your_elevenlabs_api_key
+   VITE_NEWS_API_KEY=your_newsapi_key
+   ```
 
 ## Usage
+
 To run the application in development mode:
-Copynpm run dev
+```
+npm run dev
+```
+
 To build the application for production:
-Copynpm run build
+```
+npm run build
+```
+
 To preview the production build:
-Copynpm run preview
+```
+npm run preview
+```
 
 ## Deployment
-This application is configured for deployment on Heroku. Make sure you have the Heroku CLI installed and are logged in. Then run:
-Copyheroku create
-git push heroku main
-Contributing
-Contributions to the AI Chat App are welcome. Please follow these steps:
 
-### Fork the repository
-Create a new branch (git checkout -b feature/amazing-feature)
-Commit your changes (git commit -m 'Add some amazing feature')
-Push to the branch (git push origin feature/amazing-feature)
-Open a Pull Request
+This application is configured for deployment on a platform that supports Node.js applications. To deploy:
 
-### License
-This project is licensed under the MIT License - see the LICENSE.md file for details.
-Contact
+1. Build the application:
+   ```
+   npm run build
+   ```
+
+2. Start the Express.js server:
+   ```
+   node server.js
+   ```
+
+Ensure that your deployment platform sets the environment variables specified in the `.env` file.
+
+## AI Agents
+
+The application features several AI agents, each specialized in different areas:
+
+1. Doctor Tom (medical advice)
+2. Walter Weather (weather forecasting)
+3. Dave the Entertainer (entertainment)
+4. MedRemind (medication reminders)
+5. NewsBot (news summarization)
+
+These agents are powered by OpenAI's GPT models external API's and provide specialized assistance in their respective domains.
+
+## Contributing
+
+Contributions to the AI Chat Application are welcome. Please follow these steps:
+
+1. Fork the repository
+2. Create a new branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the `LICENSE.md` file for details.
+
+## Contact
+
 Martin McCurley - mmccur300@caledonian.ac.uk
+
 Project Link: https://github.com/MMcUni/ai-chat-app
+

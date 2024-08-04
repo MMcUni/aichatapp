@@ -159,89 +159,99 @@ const useChat = () => {
     [playingMessageId, currentlyPlayingAudio, playAudioFromUrl]
   );
 
-  const handleSend = useCallback(async () => {
-    if (text.trim() === "" && !img.file) return;
+  const handleSend = useCallback(
+    async (chatHistory = []) => {
+      if (text.trim() === "" && !img.file) return;
 
-    log(`Handling send for user: ${currentUser.id}, chatId: ${chatId}`);
+      log(`Handling send for user: ${currentUser.id}, chatId: ${chatId}`);
 
-    let imgUrl = null;
-    if (img.file) {
+      let imgUrl = null;
+      if (img.file) {
+        try {
+          log("Uploading image");
+          imgUrl = await upload(img.file);
+          log("Image uploaded successfully");
+        } catch (err) {
+          ErrorHandler.handle(err, "Uploading image");
+          return;
+        }
+      }
+
+      const userMessage = {
+        id: Date.now().toString(),
+        senderId: currentUser.id,
+        text,
+        img: imgUrl,
+        createdAt: new Date().toISOString(),
+      };
+
       try {
-        log("Uploading image");
-        imgUrl = await upload(img.file);
-        log("Image uploaded successfully");
+        log("Adding user message to chat");
+        await updateDoc(doc(db, "chats", chatId), {
+          messages: arrayUnion(userMessage),
+        });
+
+        setText("");
+        setImg({ file: null, url: "" });
+
+        if (user?.isAI) {
+          log(
+            `Processing AI response for specialization: ${user.specialization}`
+          );
+          let aiResponse;
+
+          switch (user.specialization) {
+            case "medication_reminders":
+              aiResponse = await handleMedicationReminder(text, currentUser.id);
+              break;
+            case "news_summarization":
+              aiResponse = await handleNewsSummarization(text);
+              break;
+            case "weather_forecasting":
+              aiResponse = await handleWeatherQuery(text);
+            case "companionship":
+              aiResponse = await getAIResponse(
+                text,
+                user.specialization,
+                currentUser.username,
+                chatHistory
+              );
+              break;
+            default:
+              aiResponse = await getAIResponse(
+                text,
+                user.specialization,
+                currentUser.username
+              );
+          }
+
+          if (aiResponse) {
+            log("Generating audio for AI response");
+            const audioUrl = await generateAudio(aiResponse, user.id);
+            const aiMessage = {
+              id: (Date.now() + 1).toString(),
+              senderId: user.id,
+              text: aiResponse,
+              audioUrl: audioUrl,
+              createdAt: new Date().toISOString(),
+              type: "voice",
+            };
+
+            log("Adding AI message to chat");
+            await updateDoc(doc(db, "chats", chatId), {
+              messages: arrayUnion(aiMessage),
+            });
+          } else {
+            error("No AI response received");
+            toast.error("Failed to get AI response. Please try again.");
+          }
+        }
       } catch (err) {
-        ErrorHandler.handle(err, "Uploading image");
-        return;
+        ErrorHandler.handle(err, "Sending message or getting AI response");
       }
-    }
-
-    const userMessage = {
-      id: Date.now().toString(),
-      senderId: currentUser.id,
-      text,
-      img: imgUrl,
-      createdAt: new Date().toISOString(),
-    };
-
-    try {
-      log("Adding user message to chat");
-      await updateDoc(doc(db, "chats", chatId), {
-        messages: arrayUnion(userMessage),
-      });
-
-      setText("");
-      setImg({ file: null, url: "" });
-
-      if (user?.isAI) {
-        log(
-          `Processing AI response for specialization: ${user.specialization}`
-        );
-        let aiResponse;
-
-        switch (user.specialization) {
-          case "medication_reminders":
-            aiResponse = await handleMedicationReminder(text, currentUser.id);
-            break;
-          case "news_summarization":
-            aiResponse = await handleNewsSummarization(text);
-            break;
-          case "weather_forecasting":
-            aiResponse = await handleWeatherQuery(text);
-            break;
-          default:
-            aiResponse = await getAIResponse(
-              text,
-              user.specialization,
-              currentUser.username
-            );
-        }
-
-        if (aiResponse) {
-          log("Generating audio for AI response");
-          const audioUrl = await generateAudio(aiResponse, user.id);
-          const aiMessage = {
-            id: (Date.now() + 1).toString(),
-            senderId: user.id,
-            text: aiResponse,
-            audioUrl: audioUrl,
-            createdAt: new Date().toISOString(),
-            type: "voice",
-          };
-
-          log("Adding AI message to chat");
-          await updateDoc(doc(db, "chats", chatId), {
-            messages: arrayUnion(aiMessage),
-          });
-        } else {
-          error("No AI response received");
-          toast.error("Failed to get AI response. Please try again.");
-        }
-      }
-    } catch (err) {
-      ErrorHandler.handle(err, "Sending message or getting AI response");
-    }
-  }, [text, img, currentUser.id, chatId, user, addReminder]);
+    },
+    [text, img, currentUser.id, chatId, user, addReminder]
+  );
 
   const handleMedicationReminder = async (text) => {
     const parsedReminder = parseReminderInput(text);
@@ -403,10 +413,10 @@ const useChat = () => {
   };
 
   const handleKeyPress = useCallback(
-    (e) => {
+    (e, chatHistory = []) => {
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
-        handleSend();
+        handleSend(chatHistory);
       }
     },
     [handleSend]
