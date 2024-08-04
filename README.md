@@ -2,6 +2,10 @@
 
 AI Chat Application is a sophisticated, real-time messaging platform built with React and Firebase. It integrates multiple AI agents, speech recognition, text-to-speech capabilities, news summarization, weather forecasting, and medication reminders.
 
+## Live Demo
+
+A live version of the application is available at: [https://aichatapp-5849538d3387.herokuapp.com/](https://aichatapp-5849538d3387.herokuapp.com/)
+
 ## Features
 
 - User authentication (sign up, login, logout)
@@ -88,19 +92,18 @@ npm run preview
 
 ## Deployment
 
-This application is configured for deployment on a platform that supports Node.js applications. To deploy:
+This application is deployed on Heroku. To deploy your own instance:
 
-1. Build the application:
+1. Create a new Heroku app
+2. Set up the Heroku CLI and login
+3. Add the Heroku remote to your git repository
+4. Set the environment variables in Heroku (use `heroku config:set`)
+5. Deploy by pushing to the Heroku remote:
    ```
-   npm run build
+   git push heroku main
    ```
 
-2. Start the Express.js server:
-   ```
-   node server.js
-   ```
-
-Ensure that your deployment platform sets the environment variables specified in the `.env` file.
+Ensure that your Heroku app has the necessary buildpacks and that all environment variables are set correctly.
 
 ## AI Agents
 
@@ -132,5 +135,5 @@ This project is licensed under the MIT License - see the `LICENSE.md` file for d
 
 Martin McCurley - mmccur300@caledonian.ac.uk
 
-Project Link: https://github.com/MMcUni/ai-chat-app
-
+Project Link: https://github.com/MMcUni/aichatapp
+Live Demo: https://aichatapp-5849538d3387.herokuapp.com/
