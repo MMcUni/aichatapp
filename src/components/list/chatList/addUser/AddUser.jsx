@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./addUser.css";
 import { db } from "../../../../services/firebase";
 import {
@@ -20,8 +20,25 @@ const AddUser = ({ setChats }) => {
   const [user, setUser] = useState(null);
   const [error, setError] = useState(null);
   const [searchPerformed, setSearchPerformed] = useState(false);
+  const [availableUsers, setAvailableUsers] = useState([]);
   const { currentUser } = useUserStore();
 
+  useEffect(() => {
+    const fetchAvailableUsers = async () => {
+      try {
+        const usersRef = collection(db, "users");
+        const querySnapshot = await getDocs(usersRef);
+        const users = querySnapshot.docs
+          .map(doc => doc.data())
+          .filter(user => user.id !== currentUser.id); // Exclude current user
+        setAvailableUsers(users);
+      } catch (err) {
+        console.error("Error fetching available users:", err);
+      }
+    };
+
+    fetchAvailableUsers();
+  }, [currentUser.id]);
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -51,13 +68,14 @@ const AddUser = ({ setChats }) => {
     }
   };
 
-  const handleAdd = async () => {
-    if (!user) return;
+  const handleAdd = async (selectedUser) => {
+    const userToAdd = selectedUser || user;
+    if (!userToAdd) return;
   
-    const chatId = user.isAI ? `ai-assistant-${user.id}-${currentUser.id}` : (
-      currentUser.id > user.id
-        ? currentUser.id + user.id
-        : user.id + currentUser.id
+    const chatId = userToAdd.isAI ? `ai-assistant-${userToAdd.id}-${currentUser.id}` : (
+      currentUser.id > userToAdd.id
+        ? currentUser.id + userToAdd.id
+        : userToAdd.id + currentUser.id
     );
   
     try {
@@ -78,7 +96,7 @@ const AddUser = ({ setChats }) => {
             await updateDoc(currentUserChatsRef, {
               chats: arrayUnion({
                 chatId: chatId,
-                receiverId: user.id,
+                receiverId: userToAdd.id,
                 lastMessage: "",
                 updatedAt: currentTime,
               }),
@@ -88,15 +106,15 @@ const AddUser = ({ setChats }) => {
           await setDoc(currentUserChatsRef, {
             chats: [{
               chatId: chatId,
-              receiverId: user.id,
+              receiverId: userToAdd.id,
               lastMessage: "",
               updatedAt: currentTime,
             }],
           });
         }
   
-        if (!user.isAI) {
-          const userChatsRef = doc(db, "userchats", user.id);
+        if (!userToAdd.isAI) {
+          const userChatsRef = doc(db, "userchats", userToAdd.id);
           const userChatsDoc = await getDoc(userChatsRef);
           
           if (userChatsDoc.exists()) {
@@ -128,15 +146,15 @@ const AddUser = ({ setChats }) => {
             return [
               {
                 chatId: chatId,
-                receiverId: user.id,
+                receiverId: userToAdd.id,
                 lastMessage: "",
                 updatedAt: currentTime,
                 user: {
-                  id: user.id,
-                  username: user.username,
-                  avatar: user.avatar,
-                  isAI: user.isAI,
-                  specialization: user.specialization,
+                  id: userToAdd.id,
+                  username: userToAdd.username,
+                  avatar: userToAdd.avatar,
+                  isAI: userToAdd.isAI,
+                  specialization: userToAdd.specialization,
                 },
               },
               ...prevChats,
@@ -169,22 +187,31 @@ const AddUser = ({ setChats }) => {
             <img src={user.avatar || "./avatar.png"} alt="" />
             <span>{user.username}</span>
           </div>
-          <button onClick={handleAdd}>Add User</button>
+          <button onClick={() => handleAdd()}>Add User</button>
         </div>
       )}
-      {searchPerformed && !user && !error && (
-        <div className="ai-agents">
-          <h3>Available AI Agents:</h3>
-          <ul>
-            {Object.values(AI_AGENTS).map((agent) => (
-              <li key={agent.id} onClick={() => setUser(agent)}>
-                <img src={agent.avatar} alt={agent.username} />
-                <span>{agent.username}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <div className="available-users">
+        <h3>Available Human Users:</h3>
+        <ul>
+          {availableUsers.map((user) => (
+            <li key={user.id} onClick={() => handleAdd(user)}>
+              <img src={user.avatar || "./avatar.png"} alt={user.username} />
+              <span>{user.username}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div className="ai-agents">
+        <h3>Available AI Agents:</h3>
+        <ul>
+          {Object.values(AI_AGENTS).map((agent) => (
+            <li key={agent.id} onClick={() => handleAdd(agent)}>
+              <img src={agent.avatar} alt={agent.username} />
+              <span>{agent.username}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 };

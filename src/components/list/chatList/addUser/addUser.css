@@ -10,6 +10,8 @@
   left: 0;
   right: 0;
   margin: auto;
+  max-height: 80vh;
+  overflow-y: auto;
 
   form{
     display: flex;
@@ -66,4 +68,36 @@
       cursor: pointer;
     }
   }
+}
+
+.available-users, .ai-agents {
+  margin-top: 20px;
+}
+
+.available-users h3, .ai-agents h3 {
+  margin-bottom: 10px;
+}
+
+.available-users ul, .ai-agents ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+.available-users li, .ai-agents li {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.available-users li:hover, .ai-agents li:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.available-users img, .ai-agents img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  margin-right: 10px;
 }
