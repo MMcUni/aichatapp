@@ -150,7 +150,7 @@ const ChatList = () => {
 
         return () => {
           log("Cleaning up ChatList effect");
-          unsubscribeRefs.current.forEach(unsub => unsub());
+          unsubscribeRefs.current.forEach((unsub) => unsub());
           unsubscribeRefs.current = [];
         };
       } catch (error) {
@@ -164,7 +164,7 @@ const ChatList = () => {
 
     return () => {
       log("Cleaning up ChatList component");
-      unsubscribeRefs.current.forEach(unsub => unsub());
+      unsubscribeRefs.current.forEach((unsub) => unsub());
       unsubscribeRefs.current = [];
     };
   }, [currentUser, isAuthenticated]);
@@ -172,7 +172,7 @@ const ChatList = () => {
   useEffect(() => {
     if (!isAuthenticated) {
       log("Authentication state changed, cleaning up ChatList listeners");
-      unsubscribeRefs.current.forEach(unsub => unsub());
+      unsubscribeRefs.current.forEach((unsub) => unsub());
       unsubscribeRefs.current = [];
     }
   }, [isAuthenticated]);
@@ -238,7 +238,14 @@ const ChatList = () => {
           onClick={() => setAddMode((prev) => !prev)}
         />
       </div>
-      {filteredChats.length === 0 && <div>No chats available</div>}
+      {filteredChats.length === 0 && (
+        <div className="no-chats-message">
+          <p>
+            No chats available. Click the <img src="./plus.png" alt="plus" />{" "}
+            icon in the top right to add a companion to chat with.
+          </p>
+        </div>
+      )}
       {filteredChats.map((chat) => (
         <div
           className="item"

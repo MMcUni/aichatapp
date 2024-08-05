@@ -1,88 +1,90 @@
-import React, { useEffect, useState, useRef, useCallback } from "react";
-import {
-  arrayRemove,
-  arrayUnion,
-  doc,
-  updateDoc,
-  onSnapshot,
-} from "firebase/firestore";
+import React from "react";
 import { useChatStore } from "../../store/chatStore";
-import { db } from "../../services/firebase";
 import { useUserStore } from "../../store/userStore";
-import { useAuthStore } from "../../store/authStore";
-import "./detail.css";
-import { log } from "../../utils/logger";
+import { AI_AGENTS } from "../constants/aiAgents";
 import AI_AGENT_TAGLINES from "../constants/aiAgentTaglines";
+import "./detail.css";
 
 const Detail = ({ handleLogout }) => {
-  const { chatId, user, isCurrentUserBlocked, isReceiverBlocked, changeBlock } =
-    useChatStore();
+  const { user, isCurrentUserBlocked, isReceiverBlocked, changeBlock } = useChatStore();
   const { currentUser } = useUserStore();
-  const { isAuthenticated } = useAuthStore();
-  const [userDetails, setUserDetails] = useState(null);
-  const unsubscribeRef = useRef(null);
 
-  const cleanupListeners = useCallback(() => {
-    log("Cleaning up listeners in Detail");
-    if (unsubscribeRef.current) {
-      unsubscribeRef.current();
-      unsubscribeRef.current = null;
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      cleanupListeners();
-    }
-  }, [isAuthenticated, cleanupListeners]);
-
-  useEffect(() => {
-    log("Setting up user details listener");
-
-    if (user && currentUser && isAuthenticated) {
-      log("Setting up new listener");
-      const userDocRef = doc(db, "users", user.id);
-      unsubscribeRef.current = onSnapshot(
-        userDocRef,
-        (doc) => {
-          if (isAuthenticated && doc.exists()) {
-            log("Received user details update");
-            setUserDetails(doc.data());
-          }
-        },
-        (error) => {
-          console.error("Error fetching user details:", error);
-        }
-      );
-    }
-
-    return cleanupListeners;
-  }, [user, currentUser, isAuthenticated, cleanupListeners]);
-
-  const handleBlock = async () => {
-    if (!user || !currentUser) return;
-
-    const userDocRef = doc(db, "users", currentUser.id);
-
-    try {
-      await updateDoc(userDocRef, {
-        blocked: isReceiverBlocked ? arrayRemove(user.id) : arrayUnion(user.id),
-      });
-      changeBlock();
-    } catch (err) {
-      log(err);
-    }
+  const getExamplePrompts = (specialization) => {
+    const prompts = {
+      medical: [
+        "What are the symptoms of the flu?",
+        "How can I improve my sleep habits?",
+        "What's a balanced diet look like?",
+      ],
+      weather_forecasting: [
+        "What's the weather like in New York this weekend?",
+        "Will it rain tomorrow in London?",
+        "What's the forecast for next week in Tokyo?",
+      ],
+      entertainment: [
+        "Tell me a joke about cats",
+        "What are the top movies this year?",
+        "Give me a fun fact about music",
+      ],
+      medication_reminders: [
+        "Remind me to take aspirin at 9 AM daily",
+        "Set a reminder for my vitamin D pill every morning",
+        "When should I take my next dose of antibiotics?",
+      ],
+      news_summarization: [
+        "Summarize today's top headlines",
+        "What's the latest news in technology?",
+        "Give me an overview of current global events",
+      ],
+      companionship: [
+        "How was your day?",
+        "Can you recommend a good book?",
+        "What's your favorite topic to discuss?",
+      ],
+    };
+    return prompts[specialization] || [];
   };
 
-  const renderPhotoItem = (photoUrl, photoName) => (
-    <div className="photoItem" key={photoName}>
-      <div className="photoDetail">
-        <img src={photoUrl} alt={photoName} />
-        <span>{photoName}</span>
+  const renderExamplePrompts = () => {
+    if (!user?.isAI) return null;
+    const prompts = getExamplePrompts(user.specialization);
+    return (
+      <div className="example-prompts">
+        <h3>Example Prompts</h3>
+        <ul>
+          {prompts.map((prompt, index) => (
+            <li key={index}>{prompt}</li>
+          ))}
+        </ul>
       </div>
-      <img src="./download.png" alt="Download" className="icon" />
-    </div>
-  );
+    );
+  };
+
+  const renderAIInfo = () => {
+    if (!user?.isAI) return null;
+    return (
+      <div className="ai-info">
+        <h3>AI Assistant Information</h3>
+        <p>Specialization: {AI_AGENTS[user.id].specialization}</p>
+        <p>Version: 1.0</p>
+      </div>
+    );
+  };
+
+  const renderUserActions = () => {
+    if (user?.isAI) return null;
+    return (
+      <div className="user-actions">
+        <button onClick={changeBlock}>
+          {isCurrentUserBlocked
+            ? "You are Blocked!"
+            : isReceiverBlocked
+            ? "Unblock User"
+            : "Block User"}
+        </button>
+      </div>
+    );
+  };
 
   return (
     <div className="detail">
@@ -95,51 +97,13 @@ const Detail = ({ handleLogout }) => {
         <p>{user?.isAI ? AI_AGENT_TAGLINES[user.id] : "User bio goes here"}</p>
       </div>
       <div className="info">
-        <div className="option">
-          <div className="title">
-            <span>Chat Settings</span>
-            <img src="./arrowUp.png" alt="Expand" />
-          </div>
-        </div>
-        <div className="option">
-          <div className="title">
-            <span>Privacy & Help</span>
-            <img src="./arrowUp.png" alt="Expand" />
-          </div>
-        </div>
-        <div className="option">
-          <div className="title">
-            <span>Shared Photos</span>
-            <img src="./arrowDown.png" alt="Collapse" />
-          </div>
-          <div className="photos">
-            {[1, 2, 3, 4].map((index) =>
-              renderPhotoItem(
-                "https://images.pexels.com/photos/7381200/pexels-photo-7381200.jpeg?auto=compress&cs=tinysrgb&w=800&lazy=load",
-                `photo_2024_${index}.png`
-              )
-            )}
-          </div>
-        </div>
-        <div className="option">
-          <div className="title">
-            <span>Shared Files</span>
-            <img src="./arrowUp.png" alt="Expand" />
-          </div>
-        </div>
-        {!user?.isAI && (
-          <button onClick={handleBlock}>
-            {isCurrentUserBlocked
-              ? "You are Blocked!"
-              : isReceiverBlocked
-              ? "Unblock User"
-              : "Block User"}
-          </button>
-        )}
-        <button className="logout" onClick={handleLogout}>
-          Logout
-        </button>
+        {renderAIInfo()}
+        {renderExamplePrompts()}
+        {renderUserActions()}
       </div>
+      <button className="logout" onClick={handleLogout}>
+        Logout
+      </button>
     </div>
   );
 };
