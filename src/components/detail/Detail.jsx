@@ -17,9 +17,9 @@ const Detail = ({ handleLogout }) => {
         "What's a balanced diet look like?",
       ],
       weather_forecasting: [
-        "What's the weather like in New York this weekend?",
-        "Will it rain tomorrow in London?",
-        "What's the forecast for next week in Tokyo?",
+        "What's the weather like in Edinburgh this weekend?",
+        "Will it rain tomorrow in Glasgow?",
+        "What's the forecast for next week in Aberdeen?",
       ],
       entertainment: [
         "Tell me a joke about cats",
