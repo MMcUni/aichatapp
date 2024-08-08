@@ -13,7 +13,7 @@ import {
   startAfter,
 } from "firebase/firestore";
 import { log, error, warn, info } from "../utils/logger";
-import { format, parseISO, isAfter, isBefore } from "date-fns";
+import { format, parseISO, isAfter, isBefore, isEqual } from "date-fns";
 
 const REMINDERS_COLLECTION = "reminders";
 
@@ -39,7 +39,8 @@ export const createReminder = async (userId, reminderData) => {
       userId,
       medication: reminderData.medication,
       dosage: reminderData.dosage,
-      time: reminderData.time, // The time should already be normalized in parseReminderInput
+      time: reminderData.time,
+      date: reminderData.date,
       frequency: reminderData.frequency,
       createdAt: new Date().toISOString(),
       isCompleted: false,
@@ -114,7 +115,7 @@ export const checkDueReminders = async (userId) => {
   try {
     const remindersRef = collection(db, REMINDERS_COLLECTION);
     const now = new Date();
-    const currentTime = format(now, "HH:mm");
+    log(`Checking due reminders at ${format(now, 'yyyy-MM-dd HH:mm:ss')}`);
 
     const q = query(
       remindersRef,
@@ -126,9 +127,13 @@ export const checkDueReminders = async (userId) => {
     const dueReminders = [];
     querySnapshot.forEach((doc) => {
       const reminderData = doc.data();
-      const reminderTime = reminderData.time; // This should now be in "HH:mm" format
-      if (reminderTime <= currentTime) {
+      const reminderDateTime = parseISO(`${reminderData.date}T${reminderData.time}`);
+      log(`Checking reminder: ${reminderData.medication} at ${format(reminderDateTime, 'yyyy-MM-dd HH:mm:ss')}`);
+      if (isBefore(reminderDateTime, now) || isEqual(reminderDateTime, now)) {
+        log(`Reminder due: ${reminderData.medication}`);
         dueReminders.push({ id: doc.id, ...reminderData });
+      } else {
+        log(`Reminder not yet due: ${reminderData.medication}`);
       }
     });
 

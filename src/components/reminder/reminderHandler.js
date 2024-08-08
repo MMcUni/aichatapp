@@ -91,8 +91,12 @@ const ReminderHandler = () => {
   useEffect(() => {
     if (isAuthenticated && currentUser) {
       log("Setting up reminder handler");
-      checkReminders();
-      intervalIdRef.current = setInterval(checkReminders, 60000);
+      const fetchRemindersAndCheck = async () => {
+        await useReminderStore.getState().fetchReminders(currentUser.id);
+        checkReminders();
+      };
+      fetchRemindersAndCheck();
+      intervalIdRef.current = setInterval(checkReminders, 30000); // Check every 30 seconds
 
       // Set up listener for user's reminders
       const remindersRef = doc(db, "reminders", currentUser.id);
