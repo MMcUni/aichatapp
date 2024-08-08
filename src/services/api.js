@@ -23,6 +23,7 @@ const VOICE_IDS = {
 };
 
 export const transcribeAudio = async (audioBlob) => {
+  console.log("Deepgram API Key:", import.meta.env.VITE_DEEPGRAM_API_KEY);
   try {
     log("Transcribing audio, blob type:", audioBlob.type);
     log("Audio blob size:", audioBlob.size);
