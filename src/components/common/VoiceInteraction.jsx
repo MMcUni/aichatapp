@@ -1,15 +1,20 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef } from "react";
 import { useChatStore } from "../../store/chatStore";
-import { useUserStore } from '../../store/userStore';
-import { transcribeAudio, getAIResponse, generateAudio } from '../../services/api';
-import { toast } from 'react-toastify';
-import { doc, updateDoc, arrayUnion } from "firebase/firestore";
-import { db } from "../../services/firebase";
-import { log, error, warn, info } from '../../utils/logger';
-import styles from './VoiceInteraction.module.css';
+import { useUserStore } from "../../store/userStore";
+import {
+  transcribeAudio,
+  getAIResponse,
+  generateAudio,
+} from "../../services/api";
+import { toast } from "react-toastify";
+import styles from "./VoiceInteraction.module.css";
+import micIcon from '/mic.png';
 
 const VoiceInteraction = () => {
   const [isRecording, setIsRecording] = useState(false);
+  const [audioUrl, setAudioUrl] = useState(null);
+  const [transcription, setTranscription] = useState("");
+  const [response, setResponse] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const mediaRecorder = useRef(null);
   const audioChunks = useRef([]);
@@ -19,25 +24,29 @@ const VoiceInteraction = () => {
 
   const startRecording = async () => {
     try {
-      log("Requesting microphone access");
+      console.log("Requesting microphone access");
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      log("Microphone access granted");
+      console.log("Microphone access granted");
       mediaRecorder.current = new MediaRecorder(stream);
       mediaRecorder.current.ondataavailable = (event) => {
-        log("Data available from media recorder");
+        console.log("Data available from media recorder");
         audioChunks.current.push(event.data);
       };
       mediaRecorder.current.onstop = handleStop;
       mediaRecorder.current.start();
       setIsRecording(true);
-      log("Recording started");
+      console.log("Recording started");
       toast.info("Recording started. Speak now!");
     } catch (err) {
       console.error("Error accessing the microphone", err);
-      if (err.name === 'NotAllowedError') {
-        toast.error("Microphone access denied. Please allow microphone access to use this feature.");
-      } else if (err.name === 'NotFoundError') {
-        toast.error("No microphone detected. Please connect a microphone and try again.");
+      if (err.name === "NotAllowedError") {
+        toast.error(
+          "Microphone access denied. Please allow microphone access to use this feature."
+        );
+      } else if (err.name === "NotFoundError") {
+        toast.error(
+          "No microphone detected. Please connect a microphone and try again."
+        );
       } else {
         toast.error("Error accessing the microphone. Please try again.");
       }
@@ -46,85 +55,85 @@ const VoiceInteraction = () => {
 
   const stopRecording = () => {
     if (mediaRecorder.current && isRecording) {
-      log("Stopping media recorder");
+      console.log("Stopping media recorder");
       mediaRecorder.current.stop();
       setIsRecording(false);
       toast.info("Recording stopped. Processing your message...");
     } else {
-      log("Unable to stop recording: mediaRecorder is null or not recording");
+      console.log(
+        "Unable to stop recording: mediaRecorder is null or not recording"
+      );
       toast.warn("No active recording to stop.");
     }
   };
 
   const handleStop = async () => {
-    log("Handle stop triggered");
+    console.log("Handle stop triggered");
     setIsProcessing(true);
-    const audioBlob = new Blob(audioChunks.current, { type: 'audio/webm' });
+    const audioBlob = new Blob(audioChunks.current, { type: "audio/webm" });
     const audioUrl = URL.createObjectURL(audioBlob);
     setAudioUrl(audioUrl);
-    log("Audio blob created", audioBlob);
+    console.log("Audio blob created", audioBlob);
 
     try {
-      log("Starting transcription");
+      console.log("Starting transcription");
       const transcription = await transcribeAudio(audioBlob);
-      log("Transcription completed", transcription);
+      console.log("Transcription completed", transcription);
       setTranscription(transcription);
 
-      log("Adding user message to chat");
-      const userMessage = {
-        id: Date.now().toString(), // Ensure this is a string
+      console.log("Adding user message to chat");
+      addMessage({
+        id: Date.now(),
         senderId: currentUser.id,
         text: transcription,
         createdAt: new Date().toISOString(),
-        type: 'voice',
+        type: "voice",
         audioUrl: audioUrl,
-      };
-      await updateDoc(doc(db, "chats", chatId), {
-        messages: arrayUnion(userMessage)
       });
 
-      log("Requesting AI response");
-      log("AI agent:", user);
-      const aiResponse = await getAIResponse(transcription, user.specialization, currentUser.username);
-      log("AI response received", aiResponse);
+      console.log("Requesting AI response");
+      const aiResponse = await getAIResponse(
+        transcription,
+        user.id,
+        currentUser.username
+      );
+      console.log("AI response received", aiResponse);
       setResponse(aiResponse);
 
-      log("Generating audio for AI response");
-      log("AI agent ID:", user.id);
-      const audioResponse = await generateAudio(aiResponse, user.id);
-      log("Audio response generated");
+      console.log("Generating audio for AI response");
+      const audioResponse = await generateAudio(aiResponse, user.id); // Pass user.id here
+      console.log("Audio response generated");
 
-      log("Adding AI message to chat");
-      const aiMessage = {
-        id: (Date.now() + 1).toString(), // Ensure this is a string and different from the user message
+      console.log("Adding AI message to chat");
+      addMessage({
+        id: Date.now() + 1,
         senderId: user.id,
         text: aiResponse,
         createdAt: new Date().toISOString(),
-        type: 'voice',
+        type: "voice",
         audioUrl: audioResponse,
-      };
-      await updateDoc(doc(db, "chats", chatId), {
-        messages: arrayUnion(aiMessage)
       });
 
       toast.success("Voice message processed successfully!");
     } catch (error) {
-      console.error('Error processing voice interaction:', error);
+      console.error("Error processing voice interaction:", error);
       toast.error("Error processing voice message. Please try again.");
     } finally {
       setIsProcessing(false);
       audioChunks.current = [];
-      log("Voice interaction processing completed");
+      console.log("Voice interaction processing completed");
     }
   };
 
   return (
-    <button 
-      onClick={isRecording ? stopRecording : startRecording} 
+    <button
+      onClick={isRecording ? stopRecording : startRecording}
       disabled={isProcessing}
-      className={`${styles.voiceButton} ${isRecording ? styles.recording : ''} ${isProcessing ? styles.processing : ''}`}
+      className={`${styles.voiceButton} ${
+        isRecording ? styles.recording : ""
+      } ${isProcessing ? styles.processing : ""}`}
     >
-      <img src="/mic.png" alt="Microphone" className={styles.micIcon} />
+      <img src={micIcon} alt="Microphone" className={styles.micIcon} />
     </button>
   );
 };

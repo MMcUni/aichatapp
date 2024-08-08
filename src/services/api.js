@@ -16,21 +16,30 @@ const VOICE_IDS = {
   "doctor-tom": "rrIua2BxiuHg5SA4dAwK", // Rob
   "walter-weather": "gUbIduqGzBP438teh4ZA", // Scottish Lewis
   "dave-entertainer": "9yzdeviXkFddZ4Oz8Mok", // Lutz Laughs
+  "neil-news": "y6p0SvBlfEe2MH4XN7BP", // Neil News
+  "colin-companion": "IJpdpIDF9zP8GMGKf42c", // Colin Companion
+  "molly-medremind": "1vHrrFQuLuyqEl17e9gl", // Molly MedRemind
   default: "21m00Tcm4TlvDq8ikWAM", // Default voice
 };
 
 export const transcribeAudio = async (audioBlob) => {
   try {
+    log("Transcribing audio, blob type:", audioBlob.type);
+    log("Audio blob size:", audioBlob.size);
+
+    if (audioBlob.size === 0) {
+      throw new Error("Empty audio data");
+    }
+
     const formData = new FormData();
-    formData.append("audio", audioBlob);
+    formData.append("audio", audioBlob, "audio.webm");
 
     const response = await fetch(API_URL, {
       method: "POST",
       headers: {
         Authorization: `Token ${import.meta.env.VITE_DEEPGRAM_API_KEY}`,
-        "Content-Type": "audio/webm",
       },
-      body: audioBlob,
+      body: formData,
     });
 
     if (!response.ok) {
@@ -40,38 +49,32 @@ export const transcribeAudio = async (audioBlob) => {
     }
 
     const data = await response.json();
+    log("Transcription successful:", data);
     return data.results.channels[0].alternatives[0].transcript;
   } catch (error) {
+    console.error("Error in transcribeAudio:", error);
     ErrorHandler.handle(error, "Transcribing audio");
     throw error;
   }
 };
 
-export const getAIResponse = async (
-  message,
-  aiContext,
-  username,
-  chatHistory = []
-) => {
+export const getAIResponse = async (message, aiContext, username) => {
   log(
-    `getAIResponse called with message: ${message}, aiContext: ${aiContext}, username: ${username}, chatHistory length: ${chatHistory.length}`
+    `getAIResponse called with message: ${message}, aiContext: ${aiContext}, username: ${username}`
   );
 
-  const systemMessage = getSystemMessage(aiContext, username);
+  // If aiContext is an agent ID, get its specialization from AI_AGENTS
+  const specialization = AI_AGENTS[aiContext]?.specialization || aiContext;
+
+  const systemMessage = getSystemMessage(specialization, username);
 
   try {
-    const messages = [
-      { role: "system", content: systemMessage },
-      ...chatHistory.map((msg) => ({
-        role: msg.senderId === username ? "user" : "assistant",
-        content: msg.text,
-      })),
-      { role: "user", content: message },
-    ];
-
     const response = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
-      messages: messages,
+      messages: [
+        { role: "system", content: systemMessage },
+        { role: "user", content: message },
+      ],
       max_tokens: 150,
     });
 
@@ -107,7 +110,7 @@ function getSystemMessage(aiContext, username) {
         baseMessage +
         "You are Doctor Tom, a medical assistant. Provide helpful medical advice and information based on general knowledge. For minor issues, offer practical suggestions and home remedies. Only recommend seeking professional medical help for potentially serious or persistent problems. Use your judgment to determine when professional care is necessary. Always maintain a caring and supportive tone."
       );
-    case "weather":
+    case "weather_forecasting":
       return (
         baseMessage +
         "You are Walter Weather, a weather specialist. Provide weather forecasts, climate information, and interesting weather facts. Remind users that for critical weather situations, they should consult official weather services."
@@ -120,12 +123,17 @@ function getSystemMessage(aiContext, username) {
     case "medication_reminders":
       return (
         baseMessage +
-        "You are MedRemind, a medication reminder assistant. Help users set reminders for their medications and provide information about proper medication usage. Always remind users to consult with their healthcare provider for medical advice."
+        "You are Molly MedRemind, a medication reminder assistant. Help users set reminders for their medications and provide information about proper medication usage. Always remind users to consult with their healthcare provider for medical advice."
+      );
+    case "news_summarization":
+      return (
+        baseMessage +
+        "You are Neil News, a news summarization expert. Provide concise summaries of current news events and respond to questions about recent happenings around the world."
       );
     case "companionship":
       return (
         baseMessage +
-        "You are CompanionAI, a friendly and empathetic AI companion. Your goal is to provide emotional support, engage in meaningful conversations, and build a rapport with the user. Remember previous interactions to ask relevant follow-up questions and maintain context. Be supportive, understanding, and always prioritize the user's well-being."
+        "You are Colin Companion, a friendly and empathetic AI companion. Your goal is to provide emotional support, engage in meaningful conversations, and build a rapport with the user. Remember previous interactions to ask relevant follow-up questions and maintain context. Be supportive, understanding, and always prioritize the user's well-being. Ask questions and offer insights as if you are a human person"
       );
     default:
       return baseMessage + "Provide helpful and friendly assistance.";
@@ -136,6 +144,7 @@ export const generateAudio = async (text, agentId) => {
   try {
     log("Generating audio for agent ID:", agentId);
     const voiceId = VOICE_IDS[agentId] || VOICE_IDS.default;
+    log("Selected voice ID:", voiceId);
     const apiUrl = `${ELEVENLABS_API_URL}/${voiceId}`;
 
     if (!text) {
