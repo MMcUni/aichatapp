@@ -142,6 +142,7 @@ function getSystemMessage(aiContext, username) {
 }
 
 export const generateAudio = async (text, agentId) => {
+  console.log("ElevenLabs API Key:", import.meta.env.VITE_ELEVENLABS_API_KEY);
   try {
     log("Generating audio for agent ID:", agentId);
     const voiceId = VOICE_IDS[agentId] || VOICE_IDS.default;
