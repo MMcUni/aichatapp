@@ -20,21 +20,21 @@ export const AI_AGENTS = {
     isAI: true,
     specialization: "entertainment",
   },
-  "molly-medremind": { // Updated
+  "molly-medremind": {
     id: "molly-medremind",
     username: "Molly MedRemind",
     avatar: "./ai-med-reminder.png",
     isAI: true,
     specialization: "medication_reminders",
   },
-  "neil-news": { // Updated
+  "neil-news": {
     id: "neil-news",
     username: "Neil News",
     avatar: "./ai-news.png",
     isAI: true,
     specialization: "news_summarization",
   },
-  "colin-companion": { // Updated
+  "colin-companion": {
     id: "colin-companion",
     username: "Colin Companion",
     avatar: "./ai-companion.png",

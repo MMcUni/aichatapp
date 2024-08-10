@@ -45,6 +45,18 @@ const Detail = ({ handleLogout }) => {
     return prompts[specialization] || [];
   };
 
+  const getDisclaimer = (specialization) => {
+    const disclaimers = {
+      medical: "The medical information provided by Doctor Tom is for educational purposes only. It is not a substitute for professional medical advice, diagnosis, or treatment. Always seek the advice of your physician or other qualified health provider with any questions you may have regarding a medical condition.",
+      weather_forecasting: "Weather forecasts provided by Walter Weather are for informational purposes only. For critical weather situations, please consult official weather services and local authorities.",
+      entertainment: "Entertainment content provided by Dave the Entertainer is for fun and does not represent factual information. Any resemblance to real persons or events is purely coincidental.",
+      medication_reminders: "Medication reminders are provided as a convenience feature. Always follow your healthcare provider's instructions and consult them before making any changes to your medication regimen.",
+      news_summarization: "News summaries are provided for informational purposes only. They may not cover all aspects of a story. For comprehensive news coverage, please refer to multiple reputable news sources.",
+      companionship: "Colin Companion is an AI and cannot replace human relationships or professional mental health support. If you're experiencing serious emotional distress, please seek help from a qualified professional.",
+    };
+    return disclaimers[specialization] || "This AI assistant is for informational and entertainment purposes only.";
+  };
+
   const renderExamplePrompts = () => {
     if (!user?.isAI) return null;
     const prompts = getExamplePrompts(user.specialization);
@@ -56,6 +68,16 @@ const Detail = ({ handleLogout }) => {
             <li key={index}>{prompt}</li>
           ))}
         </ul>
+      </div>
+    );
+  };
+
+  const renderDisclaimer = () => {
+    if (!user?.isAI) return null;
+    return (
+      <div className="ai-disclaimer">
+        <h3>Disclaimer</h3>
+        <p>{getDisclaimer(user.specialization)}</p>
       </div>
     );
   };
@@ -99,6 +121,7 @@ const Detail = ({ handleLogout }) => {
       <div className="info">
         {renderAIInfo()}
         {renderExamplePrompts()}
+        {renderDisclaimer()}
         {renderUserActions()}
       </div>
       <button className="logout" onClick={handleLogout}>

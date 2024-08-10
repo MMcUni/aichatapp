@@ -4,15 +4,16 @@
   box-sizing: border-box;
   font-family: "Lucida Sans", "Lucida Sans Regular", "Lucida Grande",
     "Lucida Sans Unicode", Geneva, Verdana, sans-serif;
+  font-size: 16px; /* Increased base font size */
 }
 
 body {
-  background-image: url("/bg.jpeg");
+  background-color: #ECF0F1;
   display: flex;
   align-items: center;
   justify-content: center;
   height: 100vh;
-  color: white;
+  color: #ffffff;
 }
 
 .container {

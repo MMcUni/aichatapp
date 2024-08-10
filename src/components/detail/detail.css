@@ -80,10 +80,9 @@
   left: 20px;
   right: 20px;
   width: calc(100% - 40px);
-  max-width: 200px;
   margin: 0 auto;
   padding: 10px;
-  background-color: #1a73e8;
+  background-color: #5a0a0a;
   color: white;
   border: none;
   border-radius: 5px;
@@ -92,4 +91,24 @@
 
 .logout:hover {
   background-color: #1557b0;
+}
+
+.ai-disclaimer {
+  background-color: #270d64;
+  border-radius: 10px;
+  padding: 20px;
+  margin-top: 20px;
+  border: 1px solid #F4D03F;
+}
+
+.ai-disclaimer h3 {
+  color: #B7950B;
+  font-size: 20px;
+  margin-bottom: 10px;
+}
+
+.ai-disclaimer p {
+  color: #ffffff;
+  font-size: 16px;
+  line-height: 1.5;
 }
