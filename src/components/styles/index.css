@@ -8,12 +8,12 @@
 }
 
 body {
-  background-color: #ECF0F1;
+  background-image: url("/bg.jpeg");
   display: flex;
   align-items: center;
   justify-content: center;
   height: 100vh;
-  color: #ffffff;
+  color: white;
 }
 
 .container {

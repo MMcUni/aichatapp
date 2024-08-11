@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const NEWS_API_KEY = "XXeLT6dJG2RgO7NTBALD882ctzzBmuEmDvuGyG1a";
+const NEWS_API_KEY = import.meta.env.VITE_NEWS_API_KEY;
 const NEWS_API_URL = "https://api.thenewsapi.com/v1/news/top";
 
 /**
