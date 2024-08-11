@@ -1,20 +1,14 @@
-import React from 'react';
+import React from "react";
 import { format } from "timeago.js";
-import styles from './Message.module.css';
+import styles from "./Message.module.css";
 
+// Message component for displaying individual messages
 const Message = ({ message, toggleAudio, isPlaying }) => {
-  const {
-    id,
-    text,
-    img,
-    createdAt,
-    type,
-    audioUrl,
-    isOwn,
-  } = message;
+  const { id, text, img, createdAt, type, audioUrl, isOwn } = message;
 
+  // Handle click event for voice messages
   const handleClick = () => {
-    if (type === 'voice' && audioUrl) {
+    if (type === "voice" && audioUrl) {
       toggleAudio(id, audioUrl);
     }
   };
@@ -27,23 +21,25 @@ const Message = ({ message, toggleAudio, isPlaying }) => {
       onClick={handleClick}
     >
       <div className={styles.texts}>
+        {/* Message text */}
         <p>{text}</p>
+        {/* Image attachment */}
         {img && (
           <img
             src={img}
             alt="Message attachment"
             onError={(e) => {
               console.log("Error loading image, removing element");
-              e.target.style.display = 'none';
+              e.target.style.display = "none";
             }}
           />
         )}
+        {/* Timestamp */}
         <span>{format(createdAt)}</span>
       </div>
-      {type === 'voice' && (
-        <div className={styles.audioIndicator}>
-          {isPlaying ? '🔊' : '🔇'}
-        </div>
+      {/* Audio indicator for voice messages */}
+      {type === "voice" && (
+        <div className={styles.audioIndicator}>{isPlaying ? "🔊" : "🔇"}</div>
       )}
     </div>
   );

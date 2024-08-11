@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 import ErrorHandler from "../utils/errorHandler";
 import { AI_AGENTS } from "../components/constants/aiAgents";
-import { log, error, warn, info } from "../utils/logger";
+import { log, error } from "../utils/logger";
 import { fetchTopNews } from "./newsService";
 
 const API_URL = "https://api.deepgram.com/v1/listen";
@@ -13,15 +13,16 @@ const openai = new OpenAI({
 });
 
 const VOICE_IDS = {
-  "doctor-tom": "rrIua2BxiuHg5SA4dAwK", // Rob
-  "walter-weather": "gUbIduqGzBP438teh4ZA", // Scottish Lewis
-  "dave-entertainer": "9yzdeviXkFddZ4Oz8Mok", // Lutz Laughs
-  "neil-news": "y6p0SvBlfEe2MH4XN7BP", // Neil News
-  "colin-companion": "IJpdpIDF9zP8GMGKf42c", // Colin Companion
-  "molly-medremind": "1vHrrFQuLuyqEl17e9gl", // Molly MedRemind
-  default: "21m00Tcm4TlvDq8ikWAM", // Default voice
+  "doctor-tom": "rrIua2BxiuHg5SA4dAwK",
+  "walter-weather": "gUbIduqGzBP438teh4ZA",
+  "dave-entertainer": "9yzdeviXkFddZ4Oz8Mok",
+  "neil-news": "y6p0SvBlfEe2MH4XN7BP",
+  "colin-companion": "IJpdpIDF9zP8GMGKf42c",
+  "molly-medremind": "1vHrrFQuLuyqEl17e9gl",
+  default: "21m00Tcm4TlvDq8ikWAM",
 };
 
+// Function to transcribe audio
 export const transcribeAudio = async (audioBlob) => {
   console.log("Deepgram API Key:", import.meta.env.VITE_DEEPGRAM_API_KEY);
   try {
@@ -59,6 +60,7 @@ export const transcribeAudio = async (audioBlob) => {
   }
 };
 
+// Function to get AI response
 export const getAIResponse = async (message, aiContext, username) => {
   log(
     `getAIResponse called with message: ${message}, aiContext: ${aiContext}, username: ${username}`
@@ -95,6 +97,7 @@ export const getAIResponse = async (message, aiContext, username) => {
   }
 };
 
+// Function to get system message for AI
 function getSystemMessage(aiContext, username) {
   const agent = Object.values(AI_AGENTS).find(
     (agent) => agent.specialization === aiContext
@@ -141,6 +144,7 @@ function getSystemMessage(aiContext, username) {
   }
 }
 
+// Function to generate audio
 export const generateAudio = async (text, agentId) => {
   console.log("ElevenLabs API Key:", import.meta.env.VITE_ELEVENLABS_API_KEY);
   try {
@@ -192,6 +196,7 @@ export const generateAudio = async (text, agentId) => {
   }
 };
 
+// Function to get JSON response from AI
 export const getJSONResponse = async (message, aiContext, username) => {
   log(
     `getJSONResponse called with message: ${message}, aiContext: ${aiContext}, username: ${username}`
@@ -220,6 +225,7 @@ export const getJSONResponse = async (message, aiContext, username) => {
   }
 };
 
+// Function to get streaming response from AI
 export const getStreamingResponse = async (
   message,
   aiContext,
@@ -258,6 +264,7 @@ export const getStreamingResponse = async (
   }
 };
 
+// Function to summarize text
 export const summarizeText = async (text) => {
   log("Summarizing text:", text.substring(0, 50) + "...");
   try {
@@ -284,6 +291,7 @@ export const summarizeText = async (text) => {
   }
 };
 
+// Function to get news summary
 export const getNewsSummary = async () => {
   log("Getting news summary");
   try {

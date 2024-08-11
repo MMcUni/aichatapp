@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { doc, updateDoc, arrayUnion, getDoc, setDoc } from "firebase/firestore";
 import { db } from "../services/firebase";
 import { useUserStore } from "./userStore";
-import { log, error, warn, info } from '../utils/logger';
+import { log, error } from '../utils/logger';
 
 export const useChatStore = create((set, get) => ({
   chatId: null,
@@ -11,6 +11,7 @@ export const useChatStore = create((set, get) => ({
   isCurrentUserBlocked: false,
   isReceiverBlocked: false,
 
+  // Change the current chat
   changeChat: async (chatId, user) => {
     log("Changing chat to:", chatId, user);
     const currentUser = useUserStore.getState().currentUser;
@@ -65,6 +66,7 @@ export const useChatStore = create((set, get) => ({
     }
   },
 
+  // Add a new message to the chat
   addMessage: async (message, specificChatId = null) => {
     const chatId = specificChatId || get().chatId;
     if (!chatId) {
@@ -122,6 +124,7 @@ export const useChatStore = create((set, get) => ({
     }
   },
 
+  // Toggle block status
   changeBlock: () => {
     set((state) => ({ 
       ...state, 
@@ -129,6 +132,7 @@ export const useChatStore = create((set, get) => ({
     }));
   },
 
+  // Reset chat state
   resetChat: () => {
     log("Resetting chat and cleaning up listeners");
     // Add this line to forcefully disable all active listeners

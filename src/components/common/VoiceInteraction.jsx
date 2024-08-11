@@ -8,20 +8,25 @@ import {
 } from "../../services/api";
 import { toast } from "react-toastify";
 import styles from "./VoiceInteraction.module.css";
-import micIcon from '/mic.png';
+import micIcon from "/mic.png";
 
 const VoiceInteraction = () => {
+  // State declarations
   const [isRecording, setIsRecording] = useState(false);
   const [audioUrl, setAudioUrl] = useState(null);
   const [transcription, setTranscription] = useState("");
   const [response, setResponse] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Refs
   const mediaRecorder = useRef(null);
   const audioChunks = useRef([]);
 
+  // Store hooks
   const { currentUser } = useUserStore();
   const { chatId, user, addMessage } = useChatStore();
 
+  // Start recording function
   const startRecording = async () => {
     try {
       console.log("Requesting microphone access");
@@ -39,20 +44,11 @@ const VoiceInteraction = () => {
       toast.info("Recording started. Speak now!");
     } catch (err) {
       console.error("Error accessing the microphone", err);
-      if (err.name === "NotAllowedError") {
-        toast.error(
-          "Microphone access denied. Please allow microphone access to use this feature."
-        );
-      } else if (err.name === "NotFoundError") {
-        toast.error(
-          "No microphone detected. Please connect a microphone and try again."
-        );
-      } else {
-        toast.error("Error accessing the microphone. Please try again.");
-      }
+      handleMicrophoneError(err);
     }
   };
 
+  // Stop recording function
   const stopRecording = () => {
     if (mediaRecorder.current && isRecording) {
       console.log("Stopping media recorder");
@@ -67,6 +63,22 @@ const VoiceInteraction = () => {
     }
   };
 
+  // Handle microphone errors
+  const handleMicrophoneError = (err) => {
+    if (err.name === "NotAllowedError") {
+      toast.error(
+        "Microphone access denied. Please allow microphone access to use this feature."
+      );
+    } else if (err.name === "NotFoundError") {
+      toast.error(
+        "No microphone detected. Please connect a microphone and try again."
+      );
+    } else {
+      toast.error("Error accessing the microphone. Please try again.");
+    }
+  };
+
+  // Handle stop recording
   const handleStop = async () => {
     console.log("Handle stop triggered");
     setIsProcessing(true);
@@ -76,11 +88,13 @@ const VoiceInteraction = () => {
     console.log("Audio blob created", audioBlob);
 
     try {
+      // Transcribe audio
       console.log("Starting transcription");
       const transcription = await transcribeAudio(audioBlob);
       console.log("Transcription completed", transcription);
       setTranscription(transcription);
 
+      // Add user message to chat
       console.log("Adding user message to chat");
       addMessage({
         id: Date.now(),
@@ -91,6 +105,7 @@ const VoiceInteraction = () => {
         audioUrl: audioUrl,
       });
 
+      // Get AI response
       console.log("Requesting AI response");
       const aiResponse = await getAIResponse(
         transcription,
@@ -100,10 +115,12 @@ const VoiceInteraction = () => {
       console.log("AI response received", aiResponse);
       setResponse(aiResponse);
 
+      // Generate audio for AI response
       console.log("Generating audio for AI response");
-      const audioResponse = await generateAudio(aiResponse, user.id); // Pass user.id here
+      const audioResponse = await generateAudio(aiResponse, user.id);
       console.log("Audio response generated");
 
+      // Add AI message to chat
       console.log("Adding AI message to chat");
       addMessage({
         id: Date.now() + 1,

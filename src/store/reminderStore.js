@@ -12,10 +12,12 @@ import {
 import { log, error } from "../utils/logger";
 
 const normalizeTime = (timeString) => {
-  let [hours, minutes] = timeString.split(':');
+  let [hours, minutes] = timeString.split(":");
   hours = parseInt(hours, 10);
   minutes = parseInt(minutes, 10);
-  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+  return `${hours.toString().padStart(2, "0")}:${minutes
+    .toString()
+    .padStart(2, "0")}`;
 };
 
 export const useReminderStore = create(
@@ -24,8 +26,10 @@ export const useReminderStore = create(
     isLoading: false,
     error: null,
 
+    // Clear any existing errors
     clearError: () => set({ error: null }),
 
+    // Fetch reminders for a user
     fetchReminders: async (userId) => {
       set({ isLoading: true, error: null });
       try {
@@ -41,25 +45,34 @@ export const useReminderStore = create(
       }
     },
 
+    // Add a new reminder
     addReminder: async (userId, reminderData) => {
       set((state) => {
         state.isLoading = true;
         state.error = null;
       });
       try {
-        log(`Attempting to add reminder for user ${userId}: ${JSON.stringify(reminderData)}`);
+        log(
+          `Attempting to add reminder for user ${userId}: ${JSON.stringify(
+            reminderData
+          )}`
+        );
         const normalizedTime = normalizeTime(reminderData.time);
         const newReminderData = {
           ...reminderData,
           time: normalizedTime,
-          date: new Date().toISOString().split('T')[0], // Add today's date
+          date: new Date().toISOString().split("T")[0], // Add today's date
         };
         const newReminder = await createReminder(userId, newReminderData);
         set((state) => {
           state.reminders = [...state.reminders, newReminder];
           state.isLoading = false;
         });
-        log(`Added new reminder for user ${userId}: ${JSON.stringify(newReminder)}`);
+        log(
+          `Added new reminder for user ${userId}: ${JSON.stringify(
+            newReminder
+          )}`
+        );
       } catch (err) {
         error("Error adding reminder:", err);
         set((state) => {
@@ -69,6 +82,7 @@ export const useReminderStore = create(
       }
     },
 
+    // Update an existing reminder
     updateReminder: async (reminderId, updateData) => {
       set({ isLoading: true, error: null });
       try {

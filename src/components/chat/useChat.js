@@ -1,4 +1,3 @@
-// useChat.jsx
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { doc, onSnapshot, updateDoc, arrayUnion } from "firebase/firestore";
 import { db } from "../../services/firebase";
@@ -26,6 +25,7 @@ import {
 import { format, parseISO } from "date-fns";
 
 const useChat = () => {
+  // State declarations
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
   const [img, setImg] = useState({ file: null, url: "" });
@@ -34,23 +34,26 @@ const useChat = () => {
   const [isAudioEnabled, setIsAudioEnabled] = useState(false);
   const [playingMessageId, setPlayingMessageId] = useState(null);
 
+  // Store hooks
   const { currentUser } = useUserStore();
   const { chatId, user, isCurrentUserBlocked, isReceiverBlocked } =
     useChatStore();
   const { addReminder } = useReminderStore();
 
+  // Refs
   const endRef = useRef(null);
   const chatContainerRef = useRef(null);
   const prevMessagesLengthRef = useRef(0);
 
+  // Enable audio playback
   const enableAudio = useCallback(() => {
     setIsAudioEnabled(true);
     log("Audio playback enabled");
     toast.success("Audio playback enabled!");
   }, []);
 
+  // Effect to set up chat listener
   useEffect(() => {
-    log("Chat component mounted. ChatId:", chatId);
     if (!chatId) return;
 
     log("Setting up chat listener for:", chatId);
@@ -80,13 +83,11 @@ const useChat = () => {
     };
   }, [chatId]);
 
+  // Effect to handle new messages
   useEffect(() => {
-    log("Messages updated, current count:", messages.length);
     if (messages.length > prevMessagesLengthRef.current) {
       const latestMessage = messages[messages.length - 1];
-      log("Latest message:", latestMessage);
       if (latestMessage.senderId !== currentUser.id && latestMessage.audioUrl) {
-        log("Attempting to play audio for new AI message");
         playAudioFromUrl(latestMessage.id, latestMessage.audioUrl);
       }
       scrollToBottom();
@@ -94,6 +95,7 @@ const useChat = () => {
     prevMessagesLengthRef.current = messages.length;
   }, [messages, currentUser.id]);
 
+  // Scroll to bottom of chat
   const scrollToBottom = useCallback(() => {
     if (endRef.current) {
       setTimeout(() => {
@@ -102,6 +104,7 @@ const useChat = () => {
     }
   }, []);
 
+  // Play audio from URL
   const playAudioFromUrl = useCallback(
     (messageId, url) => {
       log(`Attempting to play audio for message ${messageId}`);
@@ -140,6 +143,7 @@ const useChat = () => {
     [isAudioEnabled, currentlyPlayingAudio, enableAudio]
   );
 
+  // Toggle audio playback
   const toggleAudio = useCallback(
     (messageId, audioUrl) => {
       log(`Toggling audio for message ${messageId}`);
@@ -159,6 +163,7 @@ const useChat = () => {
     [playingMessageId, currentlyPlayingAudio, playAudioFromUrl]
   );
 
+  // Handle sending messages
   const handleSend = useCallback(
     async (chatHistory = []) => {
       if (text.trim() === "" && !img.file) return;
@@ -209,6 +214,7 @@ const useChat = () => {
               break;
             case "weather_forecasting":
               aiResponse = await handleWeatherQuery(text);
+              break;
             case "companionship":
               aiResponse = await getAIResponse(
                 text,
@@ -253,6 +259,7 @@ const useChat = () => {
     [text, img, currentUser.id, chatId, user, addReminder]
   );
 
+  // Handle medication reminder
   const handleMedicationReminder = async (text) => {
     const parsedReminder = parseReminderInput(text);
     if (parsedReminder.medication && parsedReminder.time) {
@@ -268,6 +275,7 @@ const useChat = () => {
     }
   };
 
+  // Handle weather query
   const handleWeatherQuery = async (text) => {
     try {
       const location = await getLocationFromText(text);
@@ -289,6 +297,7 @@ const useChat = () => {
     }
   };
 
+  // Format current weather response
   const formatCurrentWeather = (weatherData, location) => {
     const current = weatherData.hourly;
     const currentIndex = new Date().getHours();
@@ -318,6 +327,7 @@ const useChat = () => {
     return response;
   };
 
+  // Format weather forecast response
   const formatWeatherForecast = (weatherData, location) => {
     const daily = weatherData.daily;
     let forecast = `Hello there! Here's your 7-day weather forecast for ${location.name}, ${location.country}:\n\n`;
@@ -379,6 +389,7 @@ const useChat = () => {
     return forecast;
   };
 
+  // Handle news summarization
   const handleNewsSummarization = async (text) => {
     log(`Handling news summarization request: "${text}"`);
 
@@ -412,6 +423,7 @@ const useChat = () => {
     }
   };
 
+  // Handle key press (for sending messages)
   const handleKeyPress = useCallback(
     (e, chatHistory = []) => {
       if (e.key === "Enter" && !e.shiftKey) {
@@ -422,6 +434,7 @@ const useChat = () => {
     [handleSend]
   );
 
+  // Handle image upload
   const handleImg = useCallback((e) => {
     const file = e.target.files[0];
     if (file) {
@@ -431,10 +444,13 @@ const useChat = () => {
       });
     }
   }, []);
+
+  // Handle emoji selection
   const handleEmoji = useCallback((emojiObject) => {
     setText((prev) => prev + emojiObject.emoji);
   }, []);
 
+  // Render individual message
   const renderMessage = useCallback(
     (message) => {
       const isOwn = message.senderId === currentUser.id;
@@ -451,6 +467,7 @@ const useChat = () => {
     [currentUser.id]
   );
 
+  // Memoized messages
   const memoizedMessages = useMemo(
     () => messages.map(renderMessage),
     [messages, renderMessage]

@@ -5,10 +5,14 @@ import { AI_AGENTS } from "../constants/aiAgents";
 import AI_AGENT_TAGLINES from "../constants/aiAgentTaglines";
 import "./detail.css";
 
+// Component for displaying user or AI agent details
 const Detail = ({ handleLogout }) => {
-  const { user, isCurrentUserBlocked, isReceiverBlocked, changeBlock } = useChatStore();
+  // Get relevant state and functions from stores
+  const { user, isCurrentUserBlocked, isReceiverBlocked, changeBlock } =
+    useChatStore();
   const { currentUser } = useUserStore();
 
+  // Helper function to get example prompts based on AI specialization
   const getExamplePrompts = (specialization) => {
     const prompts = {
       medical: [
@@ -45,18 +49,29 @@ const Detail = ({ handleLogout }) => {
     return prompts[specialization] || [];
   };
 
+  // Helper function to get disclaimer based on AI specialization
   const getDisclaimer = (specialization) => {
     const disclaimers = {
-      medical: "The medical information provided by Doctor Tom is for educational purposes only. It is not a substitute for professional medical advice, diagnosis, or treatment. Always seek the advice of your physician or other qualified health provider with any questions you may have regarding a medical condition.",
-      weather_forecasting: "Weather forecasts provided by Walter Weather are for informational purposes only. For critical weather situations, please consult official weather services and local authorities.",
-      entertainment: "Entertainment content provided by Dave the Entertainer is for fun and does not represent factual information. Any resemblance to real persons or events is purely coincidental.",
-      medication_reminders: "Medication reminders are provided as a convenience feature. Always follow your healthcare provider's instructions and consult them before making any changes to your medication regimen.",
-      news_summarization: "News summaries are provided for informational purposes only. They may not cover all aspects of a story. For comprehensive news coverage, please refer to multiple reputable news sources.",
-      companionship: "Colin Companion is an AI and cannot replace human relationships or professional mental health support. If you're experiencing serious emotional distress, please seek help from a qualified professional.",
+      medical:
+        "The medical information provided by Doctor Tom is for educational purposes only. It is not a substitute for professional medical advice, diagnosis, or treatment. Always seek the advice of your physician or other qualified health provider with any questions you may have regarding a medical condition.",
+      weather_forecasting:
+        "Weather forecasts provided by Walter Weather are for informational purposes only. For critical weather situations, please consult official weather services and local authorities.",
+      entertainment:
+        "Entertainment content provided by Dave the Entertainer is for fun and does not represent factual information. Any resemblance to real persons or events is purely coincidental.",
+      medication_reminders:
+        "Medication reminders are provided as a convenience feature. Always follow your healthcare provider's instructions and consult them before making any changes to your medication regimen.",
+      news_summarization:
+        "News summaries are provided for informational purposes only. They may not cover all aspects of a story. For comprehensive news coverage, please refer to multiple reputable news sources.",
+      companionship:
+        "Colin Companion is an AI and cannot replace human relationships or professional mental health support. If you're experiencing serious emotional distress, please seek help from a qualified professional.",
     };
-    return disclaimers[specialization] || "This AI assistant is for informational and entertainment purposes only.";
+    return (
+      disclaimers[specialization] ||
+      "This AI assistant is for informational and entertainment purposes only."
+    );
   };
 
+  // Render example prompts for AI agents
   const renderExamplePrompts = () => {
     if (!user?.isAI) return null;
     const prompts = getExamplePrompts(user.specialization);
@@ -72,6 +87,7 @@ const Detail = ({ handleLogout }) => {
     );
   };
 
+  // Render disclaimer for AI agents
   const renderDisclaimer = () => {
     if (!user?.isAI) return null;
     return (
@@ -82,6 +98,7 @@ const Detail = ({ handleLogout }) => {
     );
   };
 
+  // Render AI information
   const renderAIInfo = () => {
     if (!user?.isAI) return null;
     return (
@@ -93,6 +110,7 @@ const Detail = ({ handleLogout }) => {
     );
   };
 
+  // Render user actions (block/unblock) for human users
   const renderUserActions = () => {
     if (user?.isAI) return null;
     return (
@@ -110,6 +128,7 @@ const Detail = ({ handleLogout }) => {
 
   return (
     <div className="detail">
+      {/* User or AI agent header */}
       <div className="user">
         <img
           src={user?.avatar || "./avatar.png"}
@@ -118,12 +137,16 @@ const Detail = ({ handleLogout }) => {
         <h2>{user?.username}</h2>
         <p>{user?.isAI ? AI_AGENT_TAGLINES[user.id] : "User bio goes here"}</p>
       </div>
+
+      {/* Information section */}
       <div className="info">
         {renderAIInfo()}
         {renderExamplePrompts()}
         {renderDisclaimer()}
         {renderUserActions()}
       </div>
+
+      {/* Logout button */}
       <button className="logout" onClick={handleLogout}>
         Logout
       </button>

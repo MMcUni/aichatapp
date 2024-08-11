@@ -2,6 +2,7 @@ import ChatList from "./chatList/ChatList";
 import "./list.css";
 import Userinfo from "./userInfo/Userinfo";
 
+// List component that combines UserInfo and ChatList
 const List = () => {
   return (
     <div className='list'>

@@ -11,7 +11,8 @@
     "build": "vite build",
     "start": "node server.js",
     "preview": "vite preview",
-    "heroku-postbuild": "npm run build"
+    "heroku-postbuild": "npm run build",
+    "test": "vitest"
   },
   "dependencies": {
     "axios": "^1.7.2",
@@ -30,12 +31,16 @@
     "zustand": "^4.5.2"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.4.8",
+    "@testing-library/react": "^16.0.0",
     "@types/react": "^18.2.66",
     "@types/react-dom": "^18.2.22",
     "@vitejs/plugin-react": "^4.2.1",
     "eslint": "^8.57.0",
     "eslint-plugin-react": "^7.34.1",
     "eslint-plugin-react-hooks": "^4.6.0",
-    "eslint-plugin-react-refresh": "^0.4.6"
+    "eslint-plugin-react-refresh": "^0.4.6",
+    "jsdom": "^24.1.1",
+    "vitest": "^2.0.5"
   }
 }

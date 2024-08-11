@@ -1,24 +1,26 @@
-import React from 'react';
+import React from "react";
 import EmojiPicker from "emoji-picker-react";
 import VoiceInteraction from "../common/VoiceInteraction";
-import styles from './ChatInput.module.css';
+import styles from "./ChatInput.module.css";
 
-const ChatInput = ({ 
-  text, 
-  setText, 
-  img, 
-  setImg, 
-  open, 
+// ChatInput component for user input and message sending
+const ChatInput = ({
+  text,
+  setText,
+  img,
+  setImg,
+  open,
   setOpen,
-  handleSend, 
+  handleSend,
   handleKeyPress,
-  handleImg, 
-  handleEmoji, 
-  isBlocked, 
-  user 
+  handleImg,
+  handleEmoji,
+  isBlocked,
+  user,
 }) => {
   return (
     <div className={styles.bottom}>
+      {/* File upload and voice interaction */}
       <div className={styles.icons}>
         <label htmlFor="file" className={styles.iconWrapper}>
           <img src="/img.png" alt="Upload image" className={styles.icon} />
@@ -32,6 +34,7 @@ const ChatInput = ({
         />
         <VoiceInteraction />
       </div>
+      {/* Text input */}
       <input
         className={styles.input}
         type="text"
@@ -45,6 +48,7 @@ const ChatInput = ({
         onKeyPress={handleKeyPress}
         disabled={isBlocked}
       />
+      {/* Emoji picker */}
       <div className={styles.emoji}>
         <img
           src="/emoji.png"
@@ -54,10 +58,13 @@ const ChatInput = ({
         />
         {open && (
           <div className={styles.picker}>
-            <EmojiPicker onEmojiClick={(emojiObject) => handleEmoji(emojiObject)} />
+            <EmojiPicker
+              onEmojiClick={(emojiObject) => handleEmoji(emojiObject)}
+            />
           </div>
         )}
       </div>
+      {/* Send button */}
       <button
         className={styles.sendButton}
         onClick={handleSend}
@@ -65,6 +72,7 @@ const ChatInput = ({
       >
         Send
       </button>
+      {/* Image preview */}
       {img.url && (
         <div className={styles.imagePreview}>
           <img src={img.url} alt="Upload preview" />

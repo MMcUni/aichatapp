@@ -12,15 +12,16 @@ import {
   limit,
   startAfter,
 } from "firebase/firestore";
-import { log, error, warn, info } from "../utils/logger";
-import { format, parseISO, isAfter, isBefore, isEqual } from "date-fns";
+import { log, error, warn } from "../utils/logger";
+import { format, parseISO, isBefore, isEqual } from "date-fns";
 
 const REMINDERS_COLLECTION = "reminders";
 
+// Normalize time to 24-hour format
 const normalizeTime = (timeString) => {
   let [time, period] = timeString.toLowerCase().split(/\s+/);
   let [hours, minutes] = time.split(":");
-  
+
   hours = parseInt(hours, 10);
   minutes = minutes ? parseInt(minutes, 10) : 0;
 
@@ -30,9 +31,12 @@ const normalizeTime = (timeString) => {
     hours = 0;
   }
 
-  return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
+  return `${hours.toString().padStart(2, "0")}:${minutes
+    .toString()
+    .padStart(2, "0")}`;
 };
 
+// Create a new reminder
 export const createReminder = async (userId, reminderData) => {
   try {
     const reminder = {
@@ -55,6 +59,7 @@ export const createReminder = async (userId, reminderData) => {
   }
 };
 
+// Update an existing reminder
 export const updateReminder = async (reminderId, updateData) => {
   try {
     const reminderRef = doc(db, REMINDERS_COLLECTION, reminderId);
@@ -66,6 +71,7 @@ export const updateReminder = async (reminderId, updateData) => {
   }
 };
 
+// Delete a reminder
 export const deleteReminder = async (reminderId) => {
   try {
     await deleteDoc(doc(db, REMINDERS_COLLECTION, reminderId));
@@ -76,6 +82,7 @@ export const deleteReminder = async (reminderId) => {
   }
 };
 
+// Get user reminders with pagination
 export const getUserReminders = async (
   userId,
   pageSize = 20,
@@ -111,11 +118,12 @@ export const getUserReminders = async (
   }
 };
 
+// Check for due reminders
 export const checkDueReminders = async (userId) => {
   try {
     const remindersRef = collection(db, REMINDERS_COLLECTION);
     const now = new Date();
-    log(`Checking due reminders at ${format(now, 'yyyy-MM-dd HH:mm:ss')}`);
+    log(`Checking due reminders at ${format(now, "yyyy-MM-dd HH:mm:ss")}`);
 
     const q = query(
       remindersRef,
@@ -127,8 +135,15 @@ export const checkDueReminders = async (userId) => {
     const dueReminders = [];
     querySnapshot.forEach((doc) => {
       const reminderData = doc.data();
-      const reminderDateTime = parseISO(`${reminderData.date}T${reminderData.time}`);
-      log(`Checking reminder: ${reminderData.medication} at ${format(reminderDateTime, 'yyyy-MM-dd HH:mm:ss')}`);
+      const reminderDateTime = parseISO(
+        `${reminderData.date}T${reminderData.time}`
+      );
+      log(
+        `Checking reminder: ${reminderData.medication} at ${format(
+          reminderDateTime,
+          "yyyy-MM-dd HH:mm:ss"
+        )}`
+      );
       if (isBefore(reminderDateTime, now) || isEqual(reminderDateTime, now)) {
         log(`Reminder due: ${reminderData.medication}`);
         dueReminders.push({ id: doc.id, ...reminderData });
@@ -145,6 +160,7 @@ export const checkDueReminders = async (userId) => {
   }
 };
 
+// Mark a single reminder as completed
 export const markReminderAsCompleted = async (reminderId) => {
   try {
     await markRemindersAsCompleted([reminderId]);
@@ -155,6 +171,7 @@ export const markReminderAsCompleted = async (reminderId) => {
   }
 };
 
+// Mark multiple reminders as completed
 export const markRemindersAsCompleted = async (reminderIds) => {
   try {
     const batch = writeBatch(db);

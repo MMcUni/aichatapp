@@ -12,16 +12,20 @@ import {
   onSnapshot,
 } from "firebase/firestore";
 import { db } from "../../services/firebase";
-import { useAuthStore } from "../../store/authStore"; // Import the auth store
+import { useAuthStore } from "../../store/authStore";
 
 const ReminderHandler = () => {
+  // Hooks and store access
   const { currentUser } = useUserStore();
   const { checkDueReminders, markReminderCompleted } = useReminderStore();
   const { addMessage } = useChatStore();
-  const { isAuthenticated } = useAuthStore(); // Get authentication status
+  const { isAuthenticated } = useAuthStore();
+
+  // Refs for interval and unsubscribe function
   const intervalIdRef = useRef(null);
   const unsubscribeRef = useRef(null);
 
+  // Function to send reminder message
   const sendReminderMessage = useCallback(
     async (reminder, chatId) => {
       const reminderText = `${
@@ -48,6 +52,7 @@ const ReminderHandler = () => {
     [addMessage, markReminderCompleted, currentUser?.username]
   );
 
+  // Function to check for due reminders
   const checkReminders = useCallback(async () => {
     if (currentUser && currentUser.id && isAuthenticated) {
       try {
@@ -88,6 +93,7 @@ const ReminderHandler = () => {
     }
   }, [currentUser, isAuthenticated, checkDueReminders, sendReminderMessage]);
 
+  // Effect to set up reminder checking and listener
   useEffect(() => {
     if (isAuthenticated && currentUser) {
       log("Setting up reminder handler");
@@ -121,6 +127,7 @@ const ReminderHandler = () => {
     };
   }, [isAuthenticated, currentUser, checkReminders]);
 
+  // Effect to clean up when authentication state changes
   useEffect(() => {
     if (!isAuthenticated) {
       log("Authentication state changed, cleaning up ReminderHandler");

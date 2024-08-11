@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import useChat from './useChat';
-import ChatHeader from './ChatHeader';
-import Message from './Message';
-import ChatInput from './ChatInput';
-import styles from './Chat.module.css';
+import React from "react";
+import useChat from "./useChat";
+import ChatHeader from "./ChatHeader";
+import Message from "./Message";
+import ChatInput from "./ChatInput";
+import styles from "./Chat.module.css";
 
+// Main Chat component
 const Chat = () => {
+  // Destructure all necessary states and functions from useChat hook
   const {
     messages,
     text,
@@ -29,8 +31,9 @@ const Chat = () => {
     toggleAudio,
   } = useChat();
 
+  // Handle sending messages with or without chat history
   const handleSendWithHistory = async () => {
-    if (user?.specialization === 'companionship') {
+    if (user?.specialization === "companionship") {
       await handleSend(messages);
     } else {
       await handleSend();
@@ -39,14 +42,16 @@ const Chat = () => {
 
   return (
     <div className={styles.chat}>
-      <ChatHeader 
+      {/* Chat header component */}
+      <ChatHeader
         user={user}
         isAudioEnabled={isAudioEnabled}
         enableAudio={enableAudio}
       />
+      {/* Message list */}
       <div className={styles.center} ref={chatContainerRef}>
-        {messages.map(message => (
-          <Message 
+        {messages.map((message) => (
+          <Message
             key={message.uniqueKey}
             message={message}
             toggleAudio={toggleAudio}
@@ -55,7 +60,8 @@ const Chat = () => {
         ))}
         <div ref={endRef} />
       </div>
-      <ChatInput 
+      {/* Chat input component */}
+      <ChatInput
         text={text}
         setText={setText}
         img={img}

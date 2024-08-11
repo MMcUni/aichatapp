@@ -6,23 +6,30 @@ import {
   signInWithEmailAndPassword,
 } from "firebase/auth";
 import { auth, db } from "../../services/firebase";
-import { doc, setDoc, collection, query, where, getDocs } from "firebase/firestore";
+import {
+  doc,
+  setDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+} from "firebase/firestore";
 import upload from "../../utils/upload";
 import ErrorHandler from "../../utils/errorHandler";
-import { getFirestore, enableNetwork } from "firebase/firestore";
+import { enableNetwork } from "firebase/firestore";
 import { useAuthStore } from "../../store/authStore";
 import { useUserStore } from "../../store/userStore";
 
 const Login = () => {
-  const [avatar, setAvatar] = useState({
-    file: null,
-    url: "",
-  });
-
+  // State declarations
+  const [avatar, setAvatar] = useState({ file: null, url: "" });
   const [loading, setLoading] = useState(false);
+
+  // Store hooks
   const { setIsAuthenticated } = useAuthStore();
   const { fetchUserInfo } = useUserStore();
 
+  // Handle avatar upload
   const handleAvatar = (e) => {
     if (e.target.files[0]) {
       setAvatar({
@@ -32,13 +39,14 @@ const Login = () => {
     }
   };
 
+  // Handle user registration
   const handleRegister = async (e) => {
     e.preventDefault();
     setLoading(true);
     const formData = new FormData(e.target);
-  
+
     const { username, email, password } = Object.fromEntries(formData);
-  
+
     if (!username || !email || !password) {
       toast.warn("Please fill in all fields.");
       setLoading(false);
@@ -49,15 +57,19 @@ const Login = () => {
       setLoading(false);
       return;
     }
-  
+
     let user = null;
-  
+
     try {
       // Enable Firestore network connection
       await enableNetwork(db);
 
       // Create user with Firebase Authentication first
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
       user = userCredential.user;
 
       // Check if username already exists
@@ -70,10 +82,10 @@ const Login = () => {
         setLoading(false);
         return;
       }
-  
+
       // Upload avatar
       let imgUrl = await upload(avatar.file);
-  
+
       // Create user document in Firestore
       await setDoc(doc(db, "users", user.uid), {
         username,
@@ -82,21 +94,24 @@ const Login = () => {
         id: user.uid,
         blocked: [],
       });
-  
+
       // Create userchats document
       await setDoc(doc(db, "userchats", user.uid), {
         chats: [],
       });
-  
+
       toast.success("Account created successfully! You can now log in.");
     } catch (err) {
-      ErrorHandler.handle(err, 'User registration');
+      ErrorHandler.handle(err, "User registration");
       // If an error occurred after user creation, delete the user
       if (user) {
         try {
           await user.delete();
         } catch (deleteError) {
-          ErrorHandler.handle(deleteError, 'Deleting user after failed registration');
+          ErrorHandler.handle(
+            deleteError,
+            "Deleting user after failed registration"
+          );
         }
       }
     } finally {
@@ -104,6 +119,7 @@ const Login = () => {
     }
   };
 
+  // Handle user login
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -121,20 +137,24 @@ const Login = () => {
       // Enable Firestore network connection
       await enableNetwork(db);
 
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
       const user = userCredential.user;
-      
+
       // Fetch user info
       await fetchUserInfo(user.uid);
-      
+
       toast.success("Logged in successfully!");
-      
+
       // Set authenticated state after a short delay
       setTimeout(() => {
         setIsAuthenticated(true);
       }, 500);
     } catch (err) {
-      ErrorHandler.handle(err, 'User login');
+      ErrorHandler.handle(err, "User login");
     } finally {
       setLoading(false);
     }
@@ -142,15 +162,26 @@ const Login = () => {
 
   return (
     <div className="login">
+      {/* Login form */}
       <div className="item">
         <h2>Welcome back,</h2>
         <form onSubmit={handleLogin}>
           <input type="email" placeholder="Email" name="email" required />
-          <input type="password" placeholder="Password" name="password" required />
-          <button disabled={loading}>{loading ? "Logging in..." : "Sign In"}</button>
+          <input
+            type="password"
+            placeholder="Password"
+            name="password"
+            required
+          />
+          <button disabled={loading}>
+            {loading ? "Logging in..." : "Sign In"}
+          </button>
         </form>
       </div>
+
       <div className="separator"></div>
+
+      {/* Registration form */}
       <div className="item">
         <h2>Create an Account</h2>
         <form onSubmit={handleRegister}>
@@ -167,8 +198,15 @@ const Login = () => {
           />
           <input type="text" placeholder="Username" name="username" required />
           <input type="email" placeholder="Email" name="email" required />
-          <input type="password" placeholder="Password" name="password" required />
-          <button disabled={loading}>{loading ? "Creating Account..." : "Sign Up"}</button>
+          <input
+            type="password"
+            placeholder="Password"
+            name="password"
+            required
+          />
+          <button disabled={loading}>
+            {loading ? "Creating Account..." : "Sign Up"}
+          </button>
         </form>
       </div>
     </div>
