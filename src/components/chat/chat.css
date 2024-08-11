@@ -13,7 +13,7 @@
   align-items: center;
   justify-content: space-between;
   border-bottom: 1px solid #BDC3C7;
-  background-color: #2C3E50;
+  background-color: #b15747;
   color: #FFFFFF;
 }
 
@@ -34,7 +34,7 @@
 }
 
 .message.own .texts p {
-  background-color: #3498DB;
+  background-color: #db811a;
   color: #FFFFFF;
 }
 
@@ -42,7 +42,7 @@
   padding: 20px;
   background-color: #FFFFFF;
   border-radius: 10px;
-  font-size: 18px; /* Increased font size */
+  font-size: 20px; /* Increased font size */
 }
 
 .bottom {
@@ -64,7 +64,7 @@
   color: #34495E;
   padding: 20px;
   border-radius: 10px;
-  font-size: 18px; /* Increased font size */
+  font-size: 20px; /* Increased font size */
 }
 
 .sendButton {
@@ -74,7 +74,7 @@
   border: none;
   border-radius: 10px;
   cursor: pointer;
-  font-size: 18px; /* Increased font size */
+  font-size: 20px; /* Increased font size */
   font-weight: bold;
 }
 
