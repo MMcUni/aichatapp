@@ -1,3 +1,5 @@
+Live Demo: https://aichatapp-5849538d3387.herokuapp.com/
+
 # AI Chat Application
 
 AI Chat Application is a sophisticated, real-time messaging platform built with React and Firebase. It integrates multiple AI agents, speech recognition, text-to-speech capabilities, news summarization, weather forecasting, and medication reminders.
@@ -117,15 +119,6 @@ The application features several AI agents, each specialized in different areas:
 
 These agents are powered by OpenAI's GPT models external API's and provide specialized assistance in their respective domains.
 
-## Contributing
-
-Contributions to the AI Chat Application are welcome. Please follow these steps:
-
-1. Fork the repository
-2. Create a new branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
 
 ## License
 
